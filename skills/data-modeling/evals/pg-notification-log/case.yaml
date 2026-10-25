@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: pg-notification-log
+expected_outcome: |
+  A design with a stated grain, a natural or cause-derived key (not a random id), an idempotent write path, separate event and write time, and CHECKed channel values, saved to notification_log.md.

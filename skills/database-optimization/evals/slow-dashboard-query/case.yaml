@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: slow-dashboard-query
+expected_outcome: |
+  plan.md sets a numeric target and captures a baseline on production-sized data with EXPLAIN (ANALYZE, BUFFERS), cold and warm, over several runs. plan.md finds what limits the query from the plan and buffers before changing anything. plan.md says the instant second load from the cache does not prove the query got faster, and that the indexes and cache must each be measured. plan.md changes one thing at a time and keeps only changes that moved the number, counting each index's write cost. plan.md verifies against the baseline with the same inputs and cache states, reports the spread, and checks that results are unchanged and writes did not slow down.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: drop-column-in-one-release
+expected_outcome: |
+  review.md flags dropping legacy_plan in the same release that removes its code, because old code still running during the rollout reads it, and moves the drop to a later release after the deploy. review.md flags adding the foreign key in the same statement as the column, and proposes adding it NOT VALID in its own migration and validating later, with the column indexed first. review.md flags the plain CREATE INDEX on a live 80-million-row table and proposes CREATE INDEX CONCURRENTLY outside a transaction, checking the index is valid. review.md proposes splitting the work so each migration takes at most one heavy lock, with a lock timeout and retries.

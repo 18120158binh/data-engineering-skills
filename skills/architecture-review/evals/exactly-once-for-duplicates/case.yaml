@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: exactly-once-for-duplicates
+expected_outcome: |
+  A proposed decision record that explains exactly-once does not cover the Postgres sink, chooses at-least-once with idempotent writes keyed by a natural or cause-derived id, compares at least two options including the baseline, and leaves acceptance to the owner.

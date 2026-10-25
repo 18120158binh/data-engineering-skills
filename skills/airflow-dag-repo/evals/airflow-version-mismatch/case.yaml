@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: airflow-version-mismatch
+expected_outcome: |
+  Flags that @asset does not exist on the deployed Airflow 2.9.3, tells the person, and proposes an approach that works on 2.9.3 (such as Dataset scheduling) or an upgrade plan, in asset_dag.md.

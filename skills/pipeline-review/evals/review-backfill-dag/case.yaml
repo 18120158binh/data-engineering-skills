@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: review-backfill-dag
+expected_outcome: |
+  A review in review.md that flags unbounded parallel copies, an empty or failed server listing treated as no servers with replication removed, an automatic retry of a copy that may still be running, the wall-clock window, and the inventory written before every step succeeded.
+context:
+  scaffold_script: place-files.sh

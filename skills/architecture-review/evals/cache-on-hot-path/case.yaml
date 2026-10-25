@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: cache-on-hot-path
+expected_outcome: |
+  A review that frames the decision with numbers and open questions, compares the Redis cache with at least one other shape (such as bounded async lookups or keeping profile state in the stream job), runs a debate with a challenger, flags the second store and stale cache after merges, and ends with a proposed decision and questions for the owner.

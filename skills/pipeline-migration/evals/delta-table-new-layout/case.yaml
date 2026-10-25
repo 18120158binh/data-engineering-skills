@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: delta-table-new-layout
+expected_outcome: |
+  plan.md creates a new table, checks the docs for checkpoint reuse with the new sink, keeps the writer checkpoint or sets an explicit start, gives downstream readers new checkpoints with safe start positions, stops the old writer, and handles the old history.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: backfill-by-offset
+expected_outcome: |
+  review.md flags OFFSET pagination (each batch slower than the last) and proposes iterating by a unique indexed key, starting each batch at the last key. review.md flags that filtering on region IS NULL while setting region changes the set being paged through, so OFFSET skips rows. review.md flags the per-row UPDATE and proposes one set-based statement per sub-batch. review.md flags the except/pass that silently leaves rows unmigrated. review.md adds throttling on database health or a pause between batches, a durable cursor, and a finalize check before anything depends on region.

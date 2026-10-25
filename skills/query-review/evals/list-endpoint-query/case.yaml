@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: list-endpoint-query
+expected_outcome: |
+  review.md says the dev timing proves nothing and asks for EXPLAIN (ANALYZE, BUFFERS) on production-sized data, with the largest project as a parameter. review.md proposes an index matching the filter and sort, such as (project_id, state, created_at, id) or a partial index on open issues ending in a tie-breaker. review.md flags OFFSET pagination for deep pages and proposes keyset pagination with a unique tie-breaker. review.md holds the query to a written time budget for a web request.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: not-null-on-busy-table
+expected_outcome: |
+  plan.md first changes every code path that writes NULL, including the importer, before any constraint. plan.md backfills the existing NULLs in batches (or a background job), not in one UPDATE. plan.md adds CHECK (shipping_country IS NOT NULL) NOT VALID, then VALIDATE CONSTRAINT in a separate step, rather than SET NOT NULL directly on the full table. plan.md sets a short lock_timeout with retries for the DDL on this busy table. plan.md orders the steps across deploys and gives a down step or rollback for each.

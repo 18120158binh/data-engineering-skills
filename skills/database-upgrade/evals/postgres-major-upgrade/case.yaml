@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: postgres-major-upgrade
+expected_outcome: |
+  plan.md tests the application against PostgreSQL 17 and upgrades staging before production. plan.md takes a backup proven by a restore, and requires the background jobs to be finished or paused before the upgrade. plan.md chooses a method (in place, or a parallel cluster with logical replication) with its downtime and way back, and freezes schema changes during logical replication. plan.md has a rollback order and checks after the upgrade: ANALYZE, extensions, client tool versions, replicas, and a first backup. plan.md runs migrations and restores over a direct connection to the primary rather than through PgBouncer.

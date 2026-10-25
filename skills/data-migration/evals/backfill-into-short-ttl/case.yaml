@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: backfill-into-short-ttl
+expected_outcome: |
+  review.md flags that a 3-month TTL drops most of a 12-month backfill, the unbounded parallel copies, the immediate retries of copies that may still run, and the inventory marked before copies succeed.
+context:
+  scaffold_script: place-files.sh

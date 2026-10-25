@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: ch-orders-from-countries
+expected_outcome: |
+  DDL with a UTC time column, a replicated ReplacingMergeTree keyed on a dedup grain that includes the source database, monthly partitions without an entity hash bucket, a TTL that drops whole parts, and a plan for late or corrected rows, explained in orders_table.md.

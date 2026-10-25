@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: round-with-decision-log
+expected_outcome: |
+  retro.md finds the two repeated review findings (agent-accepted decision records, missing retry-path tests), turns each into a structural change, drops the one-off build timeout, judges the last retro's actions, and lists the owner's mid-round change as a contract question.
+context:
+  scaffold_script: place-files.sh

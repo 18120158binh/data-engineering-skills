@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: cdc-postgres-to-clickhouse
+expected_outcome: |
+  An options brief dated and sourced, with license, last release, and pricing per candidate from primary sources, gotchas checked (destination table creation, stopping a running copy, replication slot and WAL retention), unverified claims flagged, an 'already run' or 'build small' row where viable, and no final decision.

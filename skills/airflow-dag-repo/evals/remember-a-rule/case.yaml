@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: remember-a-rule
+expected_outcome: |
+  Writes the rule into the repository, into the default DAG configuration or the skill that owns DAG settings, with its reason, rather than only into agent memory, and says where in rule.md.

@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: mixed-authorship-repo
+expected_outcome: |
+  harvest.md establishes authorship, labels Minh's runbook TEAM and the pstack skill THIRD-PARTY, captures the exactly-once to idempotent-writes reversal and the duplicate-orders failure story with evidence, flags the token in the runbook without copying it, and routes items.
+context:
+  scaffold_script: place-files.sh

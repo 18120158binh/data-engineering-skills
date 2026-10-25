@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: vehicle-owner-history
+expected_outcome: |
+  A type 2 vehicle dimension with a new row and surrogate key per change and validity dates, facts that store the surrogate key valid at the trip time, labels taken from the dimension, in vehicle_history.md.

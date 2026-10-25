@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: new-dag-contract-first
+expected_outcome: |
+  Writes a DAG contract with numbered behavior steps, a configuration table with only the DAG ID, trigger, and regions, open questions for the owner, and stops for the owner to confirm before writing DAG code, in new_dag.md.

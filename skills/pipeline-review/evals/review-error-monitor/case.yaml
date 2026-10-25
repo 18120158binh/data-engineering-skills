@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: review-error-monitor
+expected_outcome: |
+  A review in review.md that lists the side effects and flags the time-window read, the checkpoint saved before the send, the missing guard against an overlapping rerun, an alert per raw error with no grouping, and the LLM summary that can block or fail the alert.
+context:
+  scaffold_script: place-files.sh

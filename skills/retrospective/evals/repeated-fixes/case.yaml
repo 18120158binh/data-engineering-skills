@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: repeated-fixes
+expected_outcome: |
+  retro.md finds that three fixes share one cause (windows computed from the wall clock or a UTC date instead of the run's scheduled time in the local timezone), notes the test that does not check behavior, proposes one structural change (a test or lint) plus a rule in its owning file, and waits for approval.
+context:
+  scaffold_script: place-files.sh

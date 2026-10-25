@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: review-dag-file
+expected_outcome: |
+  A review in review.md that flags the top-level Variable read and database query, the swallowed exception, the DataFrame passed through XCom, the mapped task inside a mapped task group, the hardcoded password, and the missing contract.
+context:
+  scaffold_script: place-files.sh

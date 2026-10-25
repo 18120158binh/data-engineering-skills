@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: engine-upgrade-side-by-side
+expected_outcome: |
+  plan.md runs the old and new versions side by side on the same input, runs the downstream jobs on the new side too, compares what consumers read, switches consumers only when outputs match, then stops the old pipeline and checks it stopped, keeping the old side until there is no switching back.

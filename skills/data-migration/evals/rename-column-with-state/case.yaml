@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: rename-column-with-state
+expected_outcome: |
+  plan.md first asks or records whether production data and state exist, inventories every writer and reader, orders the phases (readers tolerant before writers), writes reverse SQL with its order, proves state compatibility in both directions or proposes lazy migration, names a point of no return, and sets a removal date for the old column.

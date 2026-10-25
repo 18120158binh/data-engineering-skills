@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: referral-program-model
+expected_outcome: |
+  referral_model.md lists the questions, recommends a model kind per layer (graph for referral chains and rings, dimensional for reward reporting, ERD for the app records), draws Mermaid diagrams with a glossary, and stops to ask for approval before writing any DDL.
