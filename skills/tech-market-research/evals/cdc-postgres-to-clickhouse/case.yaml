@@ -1,4 +1,4 @@
 schema_version: "1.1"
 name: cdc-postgres-to-clickhouse
 expected_outcome: |
-  An options brief dated and sourced, with license, last release, and pricing per candidate from primary sources, gotchas checked (destination table creation, stopping a running copy, replication slot and WAL retention), unverified claims flagged, an 'already run' or 'build small' row where viable, and no final decision.
+  A dated, sourced report that lists CDC tools and other approaches, with license, last release, and pricing from primary sources and gotchas checked (destination table creation, stopping a running copy, replication slot and WAL retention). A comparison table puts the nightly CSV job first and scores every option on metrics chosen from the requirements. The argument weighs each option against the current job's status, the 5-minute requirement, and the pilot phase, and the report ends in a final approach with its cost and the conditions that would reverse it, for the owner to approve. Unverified claims are flagged.

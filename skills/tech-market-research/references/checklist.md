@@ -1,17 +1,16 @@
 # Candidate checklist
 
-Check each candidate against every section. Record the answer, the source, and how it is known.
+Read this at step 2 of `tech-market-research`. Check each candidate against every section, and record the answer, its source, and its label per `principle-label-the-evidence`.
 
-## Evidence labels
+## Contents
 
-| Label | Meaning |
-|---|---|
-| Reproduced | You ran it and saw the behavior. Say how. |
-| Read from source | From the code at a release tag or a pinned commit. Give the link. |
-| Read from docs | From the vendor's docs for the exact version. Give the link and version. |
-| Vendor claim | From marketing or a sales page. |
-| Third party | From a blog, benchmark site, or forum. A lead to check. |
-| UNVERIFIED | No primary source found. Say what would verify it. |
+- [1. Fit with the running stack](#1-fit-with-the-running-stack)
+- [2. License and maintenance](#2-license-and-maintenance)
+- [3. Cost](#3-cost)
+- [4. Real limits](#4-real-limits)
+- [5. Gotchas to look for on purpose](#5-gotchas-to-look-for-on-purpose)
+- [6. Data residency and retention](#6-data-residency-and-retention)
+- [7. Operational burden](#7-operational-burden)
 
 ## 1. Fit with the running stack
 
@@ -26,6 +25,19 @@ Check each candidate against every section. Record the answer, the source, and h
 - The date of the last release and how often releases come.
 - Who maintains it: one company, a foundation, or one person. What happens to users if they stop.
 - Open issues for our use case, and how quickly they get answers.
+
+For a project on GitHub, read these from the API rather than from a summary site. Set `R=<owner>/<repo>`:
+
+```bash
+curl -s https://api.github.com/repos/$R | jq '{license: .license.spdx_id, archived, pushed_at}'
+curl -s "https://api.github.com/repos/$R/releases?per_page=5" | jq '.[] | {tag_name, published_at}'
+curl -s "https://api.github.com/repos/$R/tags?per_page=5" | jq -r '.[].name'
+curl -s "https://api.github.com/search/issues?q=repo:$R+is:issue+is:open+<your-use-case>" | jq '.total_count, [.items[:5][] | {title, created_at}]'
+```
+
+Some projects publish tags but no GitHub releases, or track issues elsewhere, such as Jira. Then read the project's own release notes and tracker, and say which you used.
+
+Read the license file itself at the release tag you would run, because a license can change between releases.
 
 ## 3. Cost
 

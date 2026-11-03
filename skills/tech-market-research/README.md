@@ -1,34 +1,47 @@
 # tech-market-research
 
-Researches the tools, managed services, and open-source projects that could fill one role in a data architecture, and hands back an options brief where every price, limit, and claim has a primary source, a version, and a date.
+Researches the tools and approaches that could do one job in a system, compares them with the current approach, argues whether to keep or change it, and writes a report that ends in a final approach. Every fact that could decide it has a primary source, a version, and a date.
 
 ## When to use it
 
-Use it before choosing or replacing a tool, or when an architecture review needs candidates. Typical questions: "what should we use for X", "is Y still maintained", "how much would Z cost", "what are the alternatives to W".
+Use it before choosing or replacing a tool or an approach. Typical questions: "what should we use for X", "should we switch from Y", "is Y still maintained", "how much would Z cost", "what are the alternatives to W".
+
+## How it works
+
+```mermaid
+flowchart TD
+    A["A job the system needs done"] --> B["1. Frame the question<br/>job, current approach and status,<br/>requirements, scope, phase"]
+    B --> C["2. Research the alternatives<br/>tools, approaches, current, in-house"]
+    C --> D{"Meets every hard requirement?"}
+    D -->|no| E["Drop it, record why"]
+    D -->|yes| F["3. Compare in a table<br/>current approach first"]
+    F --> G["4. Argue: keep or change<br/>given status, requirements, phase"]
+    G --> H{"Can sources settle<br/>each deciding claim?"}
+    H -->|no| S["Propose a spike"]
+    H -->|yes| I["5. Form the final approach"]
+    S --> I
+    I --> J["6. Write the report"]
+    J --> K["Owner approves"]
+```
 
 ## What it believes
 
-- The survey supplies facts. `architecture-review` makes the decision.
-- Always consider what the stack already runs, and how small an in-house version would be. A second store needs a reason.
-- Look at how established products solve the problem, and note the shape most of them share.
-- Primary sources only: vendor docs for the exact version, pricing pages with a date, release notes, issue trackers, and source code. A benchmark site is a lead, not a source.
-- Look for the gotchas a vendor's page leaves out, on purpose: what the tool does not do for you, what cannot be stopped, what fills up while a consumer is down, and what breaks on upgrade.
-- A claim that could decide the choice is verified or marked UNVERIFIED. A benchmark runs the baseline at the same time, in a realistic setup.
-
-## How it connects
-
-| Skill | Relationship |
-|---|---|
-| [architecture-review](../architecture-review/README.md) | Takes this brief's shortlist into its debate. |
-| [pipeline-review](../pipeline-review/README.md) | Checks the pipeline built on the chosen tool. |
+- The answer is what fits this system now. Every argument is judged against the current status, the requirements, the scope, and the phase.
+- The current approach is the first row of the comparison, and a small in-house build is an option until a requirement rules it out.
+- Metrics are chosen from the requirements before the table is filled (`principle-analyze-trade-offs`).
+- Established products show the shape that works (`principle-follow-the-common-shape`).
+- Facts come from primary sources: vendor docs for the version you would run, dated pricing pages, release notes, issue trackers, and source code. A benchmark site is a lead, not a source.
+- Every deciding fact says how it is known, and one that cannot be verified is marked Unverified (`principle-label-the-evidence`).
+- The gotchas a vendor's page leaves out are looked for on purpose.
+- The report ends in a final approach, with its cost and the conditions that would reverse it. The owner approves it.
 
 ## Files
 
 | File | What it holds |
 |---|---|
-| [SKILL.md](SKILL.md) | The six steps and the rules for sources. Start here. |
-| [references/checklist.md](references/checklist.md) | Evidence labels, and what to check for each candidate. |
-| [references/options-brief.md](references/options-brief.md) | The hand-back format. |
+| [SKILL.md](SKILL.md) | The principles, the six steps, and the hand-back. Start here. |
+| [references/checklist.md](references/checklist.md) | What to check for each option, with commands for reading a project's license and releases. |
+| [references/report.md](references/report.md) | The report format. |
 | [evals/](evals/) | The test cases. |
 
 ## Tests
@@ -37,4 +50,4 @@ This case has not been run yet, so the skill is at version 0.1. It needs web acc
 
 | Case | What it checks |
 |---|---|
-| `cdc-postgres-to-clickhouse` | A dated, sourced brief with licenses, releases, gotchas, flagged unverified claims, and no final decision. |
+| `cdc-postgres-to-clickhouse` | Replacing a nightly CSV copy during a pilot: a dated, sourced report with licenses, releases, and gotchas, the current job as the first row of the comparison, an argument tied to the current status and the pilot phase, labels on deciding claims, flagged unverified claims, and a final approach for the owner to approve. |
