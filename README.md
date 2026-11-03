@@ -62,3 +62,7 @@ Each case runs twice, once with the skill and once without, and the graders scor
 ## Contributing
 
 Open an issue or a pull request. A change to a rule says which failure it prevents, ideally with an eval case that fails without the change.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
