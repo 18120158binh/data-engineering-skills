@@ -55,11 +55,11 @@ Skip a theme only when no effect touches it, and say why. Hand table-level findi
 
 ### 4. Prove the one fact
 
-Most pipelines are safe or unsafe because of one or two facts, such as "the cursor is saved only after the send succeeds" or "a second insert with the same key does nothing". Find those facts and get each as far down this list as is cheap:
+Most pipelines are safe or unsafe because of one or two facts, such as "the cursor is saved only after the send succeeds" or "a second insert with the same key does nothing". Find those facts, and prove each one at the strongest level below that is cheap to reach:
 
-1. You said so.
-2. You pointed at the line.
-3. You walked the failure step by step and it does not reach.
+1. Asserted, with nothing behind it.
+2. Shown at a line of code.
+3. Traced by hand along the failure path, which never gets there.
 4. You ran it: a test or script that calls the real code with a fake at the boundary, runs it twice, or kills it between two effects, and fails loudly if you are wrong.
 5. You reproduced it on a real run.
 

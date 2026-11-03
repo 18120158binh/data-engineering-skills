@@ -69,7 +69,7 @@ Table design is owned by the `data-modeling` skill: natural keys, one writer per
 - Wait for work that is still running, and never start it a second time.
 - Redo only the work that is missing.
 - **Why**: external work may have partly finished, so a rerun that recreates blindly duplicates it or fails on it.
-- **Test**: what happens if this runs twice, and if the last run crashed at each possible point?
+- **Test**: run it a second time with the same input: is the result unchanged? And if the previous run died at any point along the way?
 
 **A stateful stream job moves state across versions on purpose.**
 - Stop with a savepoint, and start the new version from it.

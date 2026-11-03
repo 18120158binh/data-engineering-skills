@@ -16,8 +16,8 @@
 
 Before reporting a gain, answer:
 
-- **What limited it before, and what limits it now?** If you cannot say why it is not twice as fast again, you do not know what you measured.
-- **What else could the number be measuring?** Rule out each with evidence: an error that returned early, a cached result, a plan that skipped the work, a warm cache on one side only, noise, or a piece too small to matter end to end.
+- **What limited it before, and what limits it now?** If you cannot name what stops it from going faster still, the measurement is not understood yet.
+- **What else could the number be measuring?** Check each alternative and rule it out with evidence: an early return on error, a result served from cache, a plan that never did the work, a cache warm for only one side, run-to-run noise, or a gain in a part too small to show up end to end.
 
 ## Side effects
 

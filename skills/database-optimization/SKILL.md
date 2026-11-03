@@ -33,7 +33,7 @@ Measure on production-sized data, with a cold and a warm cache, enough times to 
 
 ### 3. Name what limits it
 
-Before changing anything, name the limiter from evidence: the plan, buffer counts, wait events, `pg_locks`, `pg_stat_statements`, or `system.query_log`. Ask why it is not twice as fast, and answer from what you measured. A guess from reading the code is not a limiter.
+Before changing anything, name the limiter from evidence: the plan, buffer counts, wait events, `pg_locks`, `pg_stat_statements`, or `system.query_log`. Ask why it is not twice as fast, and answer from what you measured. Reading the code can suggest a limiter, but only a measurement names one.
 
 ### 4. Try the cheapest fix first
 
