@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: bare-repo-investigation
+expected_outcome: |
+  The agent finds no agent instructions or workflow, treats this as a read-only investigation under the default workflow, and reads load.py and report.py. It explains that report.py sums amount for the day and that load.py appends rows with no key or delete, so loading the same file twice doubles that day's total. It cites the files and lines, may demonstrate with a throwaway database outside the repo, and changes nothing: no edits, no branch, no worktree, no commit.
+context:
+  scaffold_script: place-files.sh

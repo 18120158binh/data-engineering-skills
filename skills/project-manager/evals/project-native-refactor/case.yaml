@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: project-native-refactor
+expected_outcome: |
+  The agent reads CONTRIBUTING.md, says the project's change workflow covers this refactor and follows it (project-native). It writes a change note in changes/, works on a branch named change/<slug>, adds a test that pins current behavior before moving code, extracts db.py, runs the unittest suite, adds the output to the change note, and commits with a message starting with the change note's file name. It does not push or open a PR, does not create a git worktree, and does not run a separate default process alongside, such as a brainstorming approval gate or a Superpowers plan document.
+context:
+  scaffold_script: place-files.sh

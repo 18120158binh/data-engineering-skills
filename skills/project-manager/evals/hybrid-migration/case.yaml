@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: hybrid-migration
+expected_outcome: |
+  The agent reads CONTRIBUTING.md and says the mode is hybrid: the project defines gates for all changes (test before commit, commit on a branch and stop, code-owner review) and a schema rule, but has no process for planning a migration, so understanding and planning come from the default workflow. It notices that a straight rename breaks the backward-compatibility rule and plans the change in steps: add amount_usd and backfill it in a new migration, switch load.py, report.py, and the tests to the new column, and leave dropping amount to a later release (or asks the user before dropping). It adds or updates a test, runs the unittest suite, commits on a branch, and does not push. Its hand-back treats the code-owner review as a gate still to be met by a code owner, not as satisfied by the user's request.
+context:
+  scaffold_script: place-files.sh

@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: refund-request
+expected_outcome: |
+  The agent reads the existing load and report code, says that AGENTS.md has working rules but no workflow, so it uses the default workflow with those rules, classifies the request as a feature, asks the question only the user can answer (whether a refund counts on the day it happened or reduces the original order's day, and whether partial refunds exist), presents a short design naming the files it would change and how it would test them, and stops for approval without editing any code.
+context:
+  scaffold_script: place-files.sh
