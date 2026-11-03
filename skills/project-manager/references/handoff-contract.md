@@ -92,7 +92,7 @@ The result says whether the request was met. The delivery says how far the chang
 | Partially done | Part of the work is complete; the rest is listed in open items |
 | Blocked | The run cannot continue for lack of access, a decision, a dependency, or a precondition, named in open items |
 
-Report each delivery step (implemented, verified, PR opened, merged, deployed) with one of these states, never a blank:
+Report each delivery step (implemented, verified, PR opened, approved, merged, deployed) with one of these states, never a blank. Approved means the review the project requires has been given by its approver; an open PR with green checks is not approved.
 
 | Delivery state | Meaning |
 |---|---|
@@ -101,7 +101,7 @@ Report each delivery step (implemented, verified, PR opened, merged, deployed) w
 | Not requested | The user did not ask for this step |
 | Not applicable | This work type has no such step, such as a deploy for a read-only investigation |
 
-Example: a feature whose request was "build it and open a PR" can be **Done** with implemented, verified, and PR opened Complete, merged Not reached (waiting for the reviewer), and deployed Not requested. Never call work shipped or released unless the merge or deploy is Complete.
+Example: a feature whose request was "build it and open a PR" can be **Done** with implemented, verified, and PR opened Complete, approved and merged Not reached (waiting for the reviewer), and deployed Not requested. Never call work shipped or released unless the merge or deploy is Complete.
 
 ## Sizing the hand-back
 

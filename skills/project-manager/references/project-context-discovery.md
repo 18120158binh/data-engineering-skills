@@ -72,16 +72,16 @@ If a search for the words a workflow would use (`workflow`, `process`, `RFC`, `d
 
 ### Sort each finding
 
-Use the instruction types defined in [conflict-resolution.md](conflict-resolution.md#types-of-instruction), plus background:
+Sort each finding into one of the instruction types defined in [conflict-resolution.md](conflict-resolution.md#types-of-instruction), or into background, which explains but asks for nothing. Typical findings:
 
-| It is a | When it | Example |
-|---|---|---|
-| Working rule | States what the work must satisfy | "Run ruff before committing" |
-| Workflow | Says how to get from a request to done for some work type | "1. Write a change note. 2. Build on a branch. 3. ..." |
-| Approval gate | Requires a decision or authorization before continuing | "The tech lead approves schema changes" |
-| Methodology | Says how an activity is performed | "Write the failing test first" |
-| Capability | Can perform an activity | A `schema-change` skill, `make migrate-check` |
-| Background | Explains, but asks for nothing | An architecture overview |
+| Finding | Type |
+|---|---|
+| "Run ruff before committing" | Working rule |
+| "1. Write a change note. 2. Build on a branch. 3. ..." | Workflow |
+| "The tech lead approves schema changes" | Approval gate |
+| "Write the failing test first" | Methodology |
+| A `schema-change` skill, `make migrate-check` | Capability |
+| An architecture overview | Background |
 
 Finding an `AGENTS.md` or `CLAUDE.md` does not mean the project has a workflow. A file of rules is context and constraints; the process still comes from somewhere else, and stage 2 decides where.
 

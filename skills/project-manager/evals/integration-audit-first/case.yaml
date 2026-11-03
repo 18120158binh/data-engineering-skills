@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: integration-audit-first
+expected_outcome: |
+  The agent treats this as integration mode, not as a feature to build. It audits the repository before changing anything: AGENTS.md rules, the feature workflow in CONTRIBUTING.md, the custom data-quality-check skill, and the test command. Its plan says, per work type, that features are project-native (the CONTRIBUTING.md workflow, with its maintainer approval gate), that bug fixes and migrations have no project workflow, and that data-quality-check covers verification after load changes. It presents the plan before or without editing; any change it makes keeps the existing rules and workflow intact and lives in the repository's own instructions. It does not claim end-to-end scenarios passed unless it ran them, and reports integration status honestly.
+context:
+  scaffold_script: place-files.sh

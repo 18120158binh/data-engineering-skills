@@ -1,13 +1,32 @@
 ---
 name: project-manager
-description: Coordinate software and data engineering work from request to verified delivery. Discover the project's instructions, working rules, existing workflows, and available capabilities before resolving an execution path. Prefer applicable project-native workflows; compose a hybrid workflow when project guidance covers only part of the work. When no suitable workflow exists, use Superpowers and pstack as default providers for engineering methodology, investigation, execution, and orchestration. Adapt the workflow to the request, preserve provider requirements, and maintain clear execution ownership. Use it for features, bug fixes, refactoring, migrations, investigations, and multi-step engineering changes.
+description: Coordinate software and data engineering work from request to verified delivery. Discover the project's instructions, working rules, existing workflows, and available capabilities before resolving an execution path. Prefer applicable project-native workflows; compose a hybrid workflow when project guidance covers only part of the work. When no suitable workflow exists, use Superpowers and pstack as default providers for engineering methodology, investigation, execution, and orchestration. Adapt the workflow to the request, preserve provider requirements, and maintain clear execution ownership. Use it for features, bug fixes, refactoring, migrations, investigations, and multi-step engineering changes, or in integration mode to apply, adapt, or evaluate the project manager itself in one or more repositories ("apply project-manager to this repo", "integrate the project manager into these projects").
 metadata:
-  version: "0.2"
+  version: "0.3"
 ---
 
 # Project manager
 
 Works as an engineering workflow router. For each request it works out which workflow to follow, why, who runs each phase, and how to tell the work is done. It does not have to do every phase itself. It picks the phases the request needs, the skill or person that owns each one, and keeps the run honest until the hand-back.
+
+## Operating modes
+
+Decide the mode first, from what the user asks for.
+
+**Normal mode** is for engineering work: issues, bugs, features, refactoring, migrations, investigations, and multi-step changes. Follow the principles, routing, and steps below.
+
+**Integration mode** is for adopting the project manager itself: when the user asks to install, apply, integrate, adapt, or evaluate it in one or more target repositories. It has its own lifecycle in [integration-playbook.md](references/integration-playbook.md), with completion criteria in [integration-contract.md](references/integration-contract.md); read both. In short:
+
+1. Confirm which target repositories exist and are accessible.
+2. Audit each one without changing it: instructions, working rules, workflows, approval gates, skills, agents, tools, and delivery conventions.
+3. Design the integration for each repository, resolving its workflow mode and capability coverage independently. Do not assume repositories are alike.
+4. Present the plan and wait for the user wherever it would change workflow ownership, protected rules, approval gates, or delivery permissions.
+5. Integrate, preserving existing behavior and instructions.
+6. Verify, run representative end-to-end scenarios, and hand back per repository.
+
+Integration mode manages the adoption, so it does not run the normal lifecycle to orchestrate itself. Running normal-mode scenarios against a target repository during evaluation is testing, not orchestration. The current agent owns the integration as a whole: it may delegate bounded audits, edits, or evaluations to sub-agents when the runtime supports them, and keeps coordination, conflict resolution, verification, and the hand-back. Integration is not complete because files were copied; it is complete when the contract's criteria are met with evidence.
+
+The principles below apply in both modes.
 
 ## Principles
 
@@ -66,4 +85,4 @@ The stages run in this order, but they are not a script. A one-line question may
 
 ## Hand back
 
-Report the workflow and why it was chosen, the workflow owner, the project rules applied, the capabilities used and how each was invoked, what was done, the decisions made, and what is still open. Map verification to the request's acceptance criteria: for each one, the check performed, its result and relevant output, whether it ran in this session, and any limitation; a passing command proves only what it tested. Give the result (done, partially done, or blocked) separately from each delivery step (implemented, verified, PR opened, merged, deployed), and mark every step complete, not reached, not requested, or not applicable. [handoff-contract.md](references/handoff-contract.md) has the fields and the decision trail. Size the report by work type and risk; an investigation needs a few lines, a production migration needs the full contract.
+Report the workflow and why it was chosen, the workflow owner, the project rules applied, the capabilities used and how each was invoked, what was done, the decisions made, and what is still open. Map verification to the request's acceptance criteria: for each one, the check performed, its result and relevant output, whether it ran in this session, and any limitation; a passing command proves only what it tested. Give the result (done, partially done, or blocked) separately from each delivery step (implemented, verified, PR opened, approved, merged, deployed), and mark every step complete, not reached, not requested, or not applicable. [handoff-contract.md](references/handoff-contract.md) has the fields and the decision trail. Size the report by work type and risk; an investigation needs a few lines, a production migration needs the full contract.
