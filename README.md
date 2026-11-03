@@ -66,3 +66,5 @@ Open an issue or a pull request. A change to a rule says which failure it preven
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+Some skills build on other open-source projects, such as Superpowers, pstack, and rea, or link to vendor documentation. [THIRD_PARTY.md](THIRD_PARTY.md) lists each one, its license, and where it is used. None of their code or text is copied here.
