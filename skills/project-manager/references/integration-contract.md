@@ -49,7 +49,7 @@ An unexecuted scenario is never passed.
 
 ## Delivery boundary
 
-Integration does not authorize merging or deploying anything unless the user asks for it. Report each delivery step with its state, as defined in [handoff-contract.md](handoff-contract.md#result-and-delivery).
+Integration does not authorize pushing, merging, or deploying anything unless the user asks for it, per [conflict-resolution.md](conflict-resolution.md#side-effect-and-delivery-boundaries). Report each delivery step with its state, as defined in [handoff-contract.md](handoff-contract.md#result-and-delivery).
 
 ## Hand-back
 

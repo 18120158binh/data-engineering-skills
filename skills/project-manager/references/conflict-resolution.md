@@ -8,6 +8,7 @@ Read this when two instructions point different ways, or before combining projec
 - [Precedence](#precedence)
 - [When both cannot hold](#when-both-cannot-hold)
 - [One execution orchestrator per work package](#one-execution-orchestrator-per-work-package)
+- [Side-effect and delivery boundaries](#side-effect-and-delivery-boundaries)
 - [Where Superpowers and pstack differ](#where-superpowers-and-pstack-differ)
 
 ## Types of instruction
@@ -69,6 +70,20 @@ Each work package has exactly one execution orchestrator, designated by its sing
 The orchestrator may use several agents, methodologies, and specialized capabilities. Those are capability providers, and do not become orchestrators unless they take over the same delegation and completion loop. Human approvers stay separate from the orchestrator. For example, in a feature built under Superpowers `subagent-driven-development`, implementer agents follow test-driven development with a project skill, a fresh reviewer agent checks each task, and a code owner, as human approver, approves the PR. That is many participants and one orchestrator.
 
 When ownership changes, for example a plan grows into a program and moves to pstack Orchestrate, record the handover, the reason, the remaining scope, and the new orchestrator's responsibilities.
+
+## Side-effect and delivery boundaries
+
+Before an externally visible or irreversible action, check that the user authorized it and that the applicable project rules permit it. Such actions include:
+
+- pushing a branch;
+- creating or updating a pull/merge request;
+- merging;
+- deploying;
+- changing production resources or permissions.
+
+Do not infer authorization from what is technically possible: tool availability, working credentials, a command allowlist, or the fact that a command would run. When authorization is missing or unclear, stop before the action, report the permission or approval it needs, and do not attempt the action to find out whether it is allowed.
+
+Instructions and enforcement are separate safety controls. Runtime permissions, credentials, branch protection, and other external checks may stop an action; an instruction does not. Do not rely on either alone: follow the instruction even when nothing would enforce it, and do not treat a missing technical block as permission.
 
 ## Where Superpowers and pstack differ
 

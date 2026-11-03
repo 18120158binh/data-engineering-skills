@@ -10,6 +10,7 @@ Read this at stage 3 to decide who or what carries out each phase, and at stage 
 - [The phase map](#the-phase-map)
 - [Invoking a capability](#invoking-a-capability)
 - [When a capability is unavailable](#when-a-capability-is-unavailable)
+- [Switching from pstack to Superpowers](#switching-from-pstack-to-superpowers)
 
 ## Roles
 
@@ -154,3 +155,15 @@ Unavailable covers both missing (not installed) and installed but not usable her
 | A migration skill the project requires is missing | Report a blocker, or ask for a suitable capability |
 | No verification capability for an important change | Do not claim it is verified; find a trustworthy alternative or stop |
 | pstack is missing, and Superpowers covers the work | Use Superpowers; do not ask for pstack |
+
+## Switching from pstack to Superpowers
+
+When pstack is the planned owner but cannot own the work package, Superpowers takes it over. Switch when any of these holds:
+
+- pstack is not installed where the agent runs.
+- Its skills are user-only and nobody can start them: a headless session, a sub-agent, or an unattended run, where no user can type `/poteto-mode` and the playbook cannot be read and followed with its required runtime behavior.
+- The playbook needs a runtime feature this harness lacks, such as the sub-agent types or model setup it delegates to.
+- No pstack playbook fits the work, and `figure-it-out` is not available or not warranted.
+- The user or the project prefers Superpowers.
+
+When switching, Superpowers takes the whole work package, from its first applicable phase; do not hand half a playbook's work to the other provider. Record the trigger in the trail, and keep the project's rules and approval gates as they were. If Superpowers is also unavailable, continue per [When a capability is unavailable](#when-a-capability-is-unavailable).

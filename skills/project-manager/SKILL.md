@@ -69,6 +69,7 @@ Some situations jump straight to a guide:
 | When | Start by | Read |
 |---|---|---|
 | A required capability is unavailable | Checking alternatives, and whether the phase can proceed without it | [capability-mapping.md](references/capability-mapping.md#when-a-capability-is-unavailable) |
+| About to push, open or update a PR, merge, deploy, or change production | Checking that the user authorized it and the project permits it; never trying it to see | [conflict-resolution.md](references/conflict-resolution.md#side-effect-and-delivery-boundaries) |
 | Two instructions conflict | Resolving authority, scope, and precedence | [conflict-resolution.md](references/conflict-resolution.md) |
 | A provider's contract does not fit the request, such as a design gate for a typo fix | Recomposing the run with another capability | [capability-mapping.md](references/capability-mapping.md) |
 | The request changes scope or work type | Revisiting workflow resolution | [workflow-resolution.md](references/workflow-resolution.md#when-the-request-changes) |
