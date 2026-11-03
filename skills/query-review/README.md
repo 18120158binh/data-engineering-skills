@@ -6,6 +6,19 @@ Orders the review of a new or changed SQL query on PostgreSQL or ClickHouse, and
 
 Use it when you write or review a query, an ORM call, a view, or a batch query. Typical requests: "is this query OK", "will this be slow", "review this SQL".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["A new or changed query"] --> B["1. Get the SQL as executed<br/>every variant"]
+    B --> C["2. Get the plan<br/>production-sized data, real parameters"]
+    C --> D["3. Read the plan<br/>rows read vs returned"]
+    D --> E{"4. Within the budget,<br/>cold and warm?"}
+    E -->|no| F["5. Check the index and the shape"]
+    F --> C
+    E -->|yes| G["6. Hand the evidence to the reviewer"]
+```
+
 ## What it adds
 
 - A fixed order of work: the SQL as executed in every variant, its plan on production-sized data, reading the plan, a written budget, the index and shape, the evidence for the reviewer.

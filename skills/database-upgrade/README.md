@@ -6,6 +6,25 @@ Orders the work of upgrading a database to a new major version, or moving it to 
 
 Use it for PostgreSQL major upgrades, managed database version changes, moving a database to a new host, and ClickHouse or operator upgrades. Typical requests: "upgrade Postgres", "move the database".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Upgrade a database version"] --> B["1. Plan<br/>dated waves, owners, go or no-go"]
+    B --> C["2. Test compatibility<br/>app tests, release notes"]
+    C --> D["3. Prepare<br/>restored backup, jobs finished,<br/>schema frozen if replicating"]
+    D --> E{"4. Choose the method"}
+    E --> E1["In place"]
+    E --> E2["New cluster with<br/>logical replication"]
+    E --> E3["Dump and restore"]
+    E1 --> F
+    E2 --> F
+    E3 --> F["5. Run it<br/>staging first, then production waves"]
+    F --> G["6. Check after<br/>statistics, extensions, replicas, backup"]
+    G --> H["7 and 8. Operate the window<br/>migrations on the primary,<br/>replicas one at a time"]
+    H --> I["9. Hand production to a person<br/>plan, results, commands, rollback"]
+```
+
 ## What it adds
 
 - A fixed order of work: plan in waves, test compatibility, prepare, choose the method and its way back, run it, check after, operate migrations during the window.

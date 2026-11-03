@@ -6,6 +6,23 @@ Plans, runs, and verifies a data migration, whether data, schema, stream state, 
 
 Use it when you move to a new store, engine, or schema, or when you rename or re-key data, upgrade a database, change stream job state, backfill history into a new target, or retire a legacy table or job. Typical requests: "move this to X", "rename this column", "switch over", "can we drop the old one".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Move data to a new store or shape"] --> B{"0. Anything to migrate?"}
+    B -->|no| C["Drop and recreate,<br/>no compatibility code"]
+    B -->|yes| D["1. Frame"]
+    D --> E["2. Inventory<br/>tables, consumers, state that must survive"]
+    E --> F["3. Plan the phases"]
+    F --> G["4. Build the way back"]
+    G --> H["5. Move the data"]
+    H --> I["6. Prove parity<br/>row and column reconciliation"]
+    I --> J["7. Cut over"]
+    J --> K["8. Remove the legacy path"]
+    K --> L["9. Look back with retrospective"]
+```
+
 ## What it believes
 
 - First ask whether anything deployed needs to survive. If nothing does, drop and recreate, and write no compatibility code.

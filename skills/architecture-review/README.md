@@ -6,6 +6,22 @@ Verifies or chooses a data architecture by debate: frame the decision with numbe
 
 Use it when you design or change how data moves or is stored, review someone's design, choose between approaches, or revisit a decision after an incident. Typical questions: "should we use X", "is this design OK", "Kafka or CDC", "how should this scale".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["A design decision to make"] --> B["1. Frame<br/>decision, constraints, criteria"]
+    B --> C["2. Ground<br/>facts and numbers from code and docs"]
+    C --> D["3. Options<br/>at least two shapes, plus the baseline"]
+    T["tech-market-research"] -.-> D
+    D --> E["4. Debate<br/>one advocate per option, a challenger<br/>on another model, one rebuttal each"]
+    E --> F["5. Judge<br/>score against the criteria"]
+    F --> G{"Can the evidence<br/>separate the options?"}
+    G -->|no| H["Name the measurement<br/>or prototype that would"]
+    G -->|yes| I["6. Record<br/>decision record, status proposed"]
+    I --> J["Owner accepts or rejects"]
+```
+
 ## What it believes
 
 - Frame first, with numbers. A missing number is an open question for the owner, never a guess taken from code.

@@ -6,6 +6,25 @@ Makes a slow query, table, or workload faster, and proves the gain against a bas
 
 Use it when something is slow, a table grows too fast, writes contend, or someone proposes an index, a cache, a materialized view, a denormalization, or a new store for speed. Typical requests: "this is slow", "speed this up", "optimize this table".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["This is slow"] --> B["1. Set the target<br/>a number on a named workload"]
+    B --> C["2. Capture the baseline"]
+    C --> D["3. Name the limiter<br/>from measurements"]
+    D --> E["4. Pick the cheapest fix for it"]
+    E --> F["5. Change one thing and measure"]
+    F --> G{"Did the number move?"}
+    G -->|no| H["Revert"]
+    G -->|yes| I["Keep"]
+    H --> K{"Target met?"}
+    I --> K
+    K -->|no| D
+    K -->|yes| L["6. Verify against the baseline<br/>same inputs, spread, same results"]
+    L --> M["7. Ship through schema-change or<br/>large-table-operations, run by a person"]
+```
+
 ## What it adds
 
 - Set a numeric target, and capture a baseline on production-sized data before changing anything.

@@ -6,6 +6,22 @@ Rules for an Airflow DAG repository that people and AI agents both work in. Ever
 
 Use it when you set up or reorganize an Airflow DAG repo, add agent instructions to one, or build, change, or review a DAG, its contract, or the shared code it imports.
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Task on a DAG"] --> B["Find the contract the change reaches"]
+    B --> C{"Does the task change<br/>what the DAG must do?"}
+    C -->|yes| D["Change the contract,<br/>owner confirms"]
+    D --> E
+    C -->|no| E["List the binding rules it touches"]
+    E --> F["Write one contract test per rule"]
+    F --> G["Write the code, following the Airflow rules"]
+    G --> H["Run the checks"]
+    H --> I["Report each rule: the code, the test,<br/>or unverified"]
+    I --> J["Commit only when a person asks.<br/>A merge deploys to production."]
+```
+
 ## What it covers
 
 The repo layout, the `AGENTS.md` rule index with `CLAUDE.md` pointing at it, skills in `.agents/skills/`, the contract-first workflow, the default DAG configuration, Airflow rules for the deployed version, contract tests, the order of checks, and what an agent may not touch in production.

@@ -6,6 +6,19 @@ Moves a running pipeline to a new engine version, framework, sink, or table layo
 
 Use it when you upgrade the database or engine a pipeline runs on, replace a badly laid out output table, change a stream job's sink, or rewrite a pipeline. Typical requests: "upgrade ClickHouse", "move the job to the new table", "repartition this streaming table", "switch the consumers over".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Move a running pipeline"] --> B["1. Frame<br/>what changes, who reads the output"]
+    B --> C{"2. What changes?"}
+    C -->|the engine or the logic| D["3a. Run side by side<br/>same input, downstream on both,<br/>compare until they match,<br/>move consumers"]
+    C -->|only the sink| E["3b. Hand over the checkpoint<br/>new output, check the docs on reuse,<br/>new checkpoint per reader"]
+    D --> F["4. Stop the old pipeline,<br/>check that it stopped"]
+    E --> F
+    F --> G["5. Retire the old output"]
+```
+
 ## What it believes
 
 - List every downstream consumer and how it tracks its position before changing anything. A consumer you missed keeps reading the old output.

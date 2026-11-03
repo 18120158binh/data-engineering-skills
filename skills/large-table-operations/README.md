@@ -6,6 +6,24 @@ Orders the work of backfilling, updating, deleting, deduplicating, partitioning,
 
 Use it when a change touches millions of rows or a hot table. Typical requests: "backfill this column", "fix the bad rows", "delete old data", "dedupe this table", "partition it".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Backfill, update, delete,<br/>or reindex a big table"] --> B["1. Decide where it runs<br/>estimate from sample batches"]
+    B --> B1["During the deploy"]
+    B --> B2["After the deploy"]
+    B --> B3["Throttled background job"]
+    B1 --> C
+    B2 --> C
+    B3 --> C["2. Choose how to iterate"]
+    C --> D["3. Shape and throttle the job"]
+    D --> E["4. Keep it correct<br/>retry-safe batches, concurrent writes"]
+    E --> F["5. Finalize before anything depends on it"]
+    F --> G["6. Follow the procedure for the operation"]
+    G --> H["7. Hand production to a person"]
+```
+
 ## What it adds
 
 - A fixed order of work: where the work runs and how long it takes, how it iterates, how batches are shaped and throttled, how it stays correct, how it is finalized, who runs it.

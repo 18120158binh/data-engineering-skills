@@ -6,6 +6,23 @@ Collects the knowledge buried in past work (decision records, contracts, runbook
 
 Use it before you write or update a skill from experience, when you onboard to a codebase's history, or before a retrospective over a long period. Typical requests: "what have we learned", "collect what we know about X", "mine my repos", "turn my history into rules".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["What have we learned?"] --> B["1. Scope<br/>purpose, topics, sources, whose knowledge"]
+    B --> C["2. Find out who wrote what"]
+    C --> D["3. List the sources, richest first"]
+    D --> E["4. Fan out<br/>one read-only agent per slice"]
+    E --> F["5. Verify<br/>quotes, evidence, duplicates, conflicts"]
+    F --> G["6. Keep what would change a later decision"]
+    G --> H["7. Separate private evidence<br/>from what can be published"]
+    H --> I["8. Route each item to its owner"]
+    I --> J{"Owner confirms?"}
+    J -->|yes| K["Into skills, tests, contracts,<br/>decision records"]
+    J -->|no| L["Dropped or edited"]
+```
+
 ## What it believes
 
 - Find out who wrote what before reading the content. A teammate's rule or a vendored file must not be credited to the owner.

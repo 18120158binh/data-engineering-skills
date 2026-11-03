@@ -6,6 +6,20 @@ Orders the work of changing the schema of a live PostgreSQL or ClickHouse databa
 
 Use it when you write or review a migration or DDL on a database that serves traffic. Typical requests: "add a column", "rename this field", "add an index", "make this NOT NULL".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Change a table's schema"] --> B{"1. Is the table live?"}
+    B -->|no| C["Drop and recreate"]
+    B -->|yes| D["2. Find the procedure for the operation"]
+    D --> E["3. Place each step in a deploy phase"]
+    E --> F["4. Check the lock each statement takes"]
+    F --> G["5. Make each step retryable and reversible"]
+    G --> H["6. Prove it on production-sized data"]
+    H --> I["7. Hand production to a person"]
+```
+
 ## What it adds
 
 - A fixed order of work: is the table live, which procedure applies, which deploy phase, which lock, how it is retried and undone, how it is proven, who runs it.

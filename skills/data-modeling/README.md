@@ -6,6 +6,21 @@ Rules for designing and reviewing data models, from the conceptual model down to
 
 Use it when you create or change a table, a column, a migration, a materialized view, a CDC or ETL target, a fact, or a dimension, or when you review someone else's schema.
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Model new data, or change a model"] --> B["0. Conceptual model<br/>questions, entities, relationships,<br/>diagram and glossary"]
+    B --> C{"Human approves?"}
+    C -->|no| B
+    C -->|yes| D["1. Answer the eight questions<br/>grain, identity, writer, replay,<br/>reads, time, lifecycle, tenancy"]
+    D --> E["2. Rules for every store"]
+    E --> F["3. The store's own rules"]
+    F --> G{"Is the table already live?"}
+    G -->|yes| H["schema-change"]
+    G -->|no| I["5. Hand back the tables<br/>with their answers"]
+```
+
 ## What it covers
 
 Conceptual models (ERD, dimensional, graph) drawn in Mermaid with a glossary, then grain, natural and surrogate keys, one writer per row, idempotent and version-guarded writes, time and timezones, absent values, soft delete, facts and dimensions with type 2 history, ClickHouse engines, sort keys, partitions, TTL, deduplication, and late data.

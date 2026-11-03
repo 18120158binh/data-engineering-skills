@@ -6,6 +6,24 @@ Looks back at finished work (a session, a pull request, a round of fixes, an inc
 
 Use it after shipping, after an incident, at the end of a round of work, or when a decision's revisit condition fires. Typical requests: "retro", "what did we learn", "look back on this", "why do we keep hitting this".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["Finished work"] --> B["1. Scope"]
+    B --> C["2. Gather the facts<br/>reversals, rework, late defects, waits"]
+    K["knowledge-harvest"] -.-> C
+    C --> D["3. Check the decisions<br/>prediction vs outcome"]
+    D --> E["4. Find the causes<br/>seen twice, or once at a high cost"]
+    E --> F["5. One change per cause<br/>a check first, then a file that owns it"]
+    F --> G["6. Check the last retro's actions"]
+    G --> H{"7. Owner approves?"}
+    H -->|yes| I["Apply"]
+    H -->|no| J["Drop or revise"]
+    I --> L["8. Record it"]
+    J --> L
+```
+
 ## What it believes
 
 - A retrospective that changes nothing did not happen.

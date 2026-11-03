@@ -28,6 +28,7 @@ With Claude Code, copy or link a skill folder into one of these places:
 ```bash
 git clone https://github.com/18120158binh/data-engineering-skills.git
 ln -s "$PWD/data-engineering-skills/skills/<name>" ~/.claude/skills/<name>
+ln -s "$PWD/data-engineering-skills/skills/principles/<name>" ~/.claude/skills/<name>
 ```
 
 With another agent that reads Agent Skills, such as Cursor, Codex, or Gemini, copy the skill folder into that agent's skills folder or into `.agents/skills/` in your project. Check your agent's documentation for the folder it reads.
@@ -36,12 +37,14 @@ As a person, start at `skills/<name>/README.md`, then read `SKILL.md` and follow
 
 ## Adding a skill
 
-Add one folder under `skills/`, named like the skill, with:
+A workflow skill is one folder under `skills/`, named like the skill, with:
 
 - `SKILL.md`: the frontmatter (`name`, `description`, `metadata.version`) and the rules;
 - `README.md`: what the skill covers, when to use it, what it believes, its files, and its test cases;
 - `references/`: the detail an agent reads on demand;
 - `evals/`: the test cases.
+
+A principle is one rule that several skills share. It lives in `skills/principles/<name>/` as a single `SKILL.md`: the rule, why it matters, test questions, and an example. It names no particular project or skill set, so it works on its own. It has no README or evals; the workflows that cite it carry the tests. [skills/principles/README.md](skills/principles/README.md) says when a rule becomes a principle.
 
 This README does not list the skills, so a new skill needs no change here.
 

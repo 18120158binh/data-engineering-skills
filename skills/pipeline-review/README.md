@@ -6,6 +6,20 @@ Checks a data pipeline, Airflow DAG, stream job, CDC flow, or operations job aga
 
 Use it when you build, change, or review a pipeline, before a merge or a first deploy, or after an incident. Typical questions: "is this safe to rerun", "what happens if it fails halfway", "will this double count", "why did nobody get alerted".
 
+## How it works
+
+```mermaid
+flowchart TD
+    A["A pipeline or DAG to review"] --> B["1. Scope"]
+    B --> C["2. List the side effects"]
+    C --> D["3. Walk the principles"]
+    D --> E["4. Prove the one fact<br/>asserted, shown, traced, ran, seen live"]
+    E --> F{"5. Is the root a design problem?"}
+    F -->|yes| G["architecture-review"]
+    F -->|no| H["6. Challenge serious findings<br/>a second reviewer tries to refute"]
+    H --> I["Verdict, findings by severity,<br/>facts it rests on, not checked"]
+```
+
 ## What it believes
 
 - Review the side effects, not the code's structure. List every write, delete, message, external call, and state save first.
