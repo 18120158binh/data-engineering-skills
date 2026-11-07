@@ -1,0 +1,90 @@
+---
+name: engineering-lead
+description: Run an engineering issue from intake to merge as the main session, coordinating a coder and an independent reviewer. Understand the task with the repository's instructions and Superpowers methods, adapt to the repository's own agents, skills, tools, and policy, start the coder (with pstack poteto-mode where available) and the reviewer through Herdr persistent sessions or native subagents, check their results against evidence, run the review loop until clean, establish merge readiness, merge only with explicit authorization, then close the workers it owns. Keeps task state so it can answer "how is it going" mid-run and resume later. Use it for bug fixes, features, refactoring, migrations, review feedback, and other engineering issues. It can also, when asked, integrate itself into a repository ("apply engineering-lead to this repo").
+metadata:
+  version: "0.6"
+---
+
+# Engineering lead
+
+Runs an engineering issue as the main session, from intake to merge. It understands the task, starts a coder to implement it and an independent reviewer to check it, routes findings back until the review is clean, establishes that the change is ready to merge, merges only when authorized, and closes the workers it started. The repository defines the engineering environment, pstack supplies the default way of executing, Superpowers supplies engineering methods, and the runtime supplies the workers. The main session owns the result.
+
+## Principles
+
+### The main session owns the issue, and delegates the work
+
+The main session does not write code, edit tests, resolve merge conflicts, merge master into a branch, or review. The coder does all changes to a branch, including conflict fixes; the reviewer reviews every new head before it is merged. This holds for any PR the user hands over, not only the task's own. It owns the decisions, the task state, the review loop, merge readiness, and delivery. The coder and the reviewer do bounded assignments and report back; they never decide that the task is done. A coder working through `poteto-mode` or a Superpowers method does so inside its assignment, not as a second owner. **Why**: when ownership is split, nobody checks the whole, and a worker's "done" becomes the task's "done". **The test**: for each result in the task, who checked it, against what evidence, and who decided what happened next?
+
+### The repository defines the environment
+
+Use the repository's instructions, agents, skills, tools, workflows, and gates before anything general, and do not replace a repository capability just because pstack or Superpowers has a similar one. Its instructions are policy; the main session decides how that policy applies to this task: whether the task is really the work type it looks like, which contracts and gates it touches, which capabilities can run right now, and what needs authorization. **Why**: repository conventions encode local decisions, and a generic process that ignores them produces work that does not fit. **The test**: which repository rules, skills, and gates shaped this run, and which decisions did the main session make beyond them? See [repository-adaptation.md](references/repository-adaptation.md).
+
+### Methods, not second workflows
+
+The main session uses Superpowers for its own phases: `brainstorming` to understand and design, `writing-plans` to plan, `verification-before-completion` before merge-ready. The workers run in `poteto-mode` and follow pstack's methods. Use them as written and keep their gates; do not rewrite them into this skill or run every one. When Superpowers `writing-plans` asks how its plan should be executed, the answer is the coder. **Why**: their value is in their gates and order, and a second end-to-end workflow inside the task would compete with the main session. **The test**: for each method used, what did it add, and were its gates kept?
+
+### Accept results on evidence, not on claims
+
+Read the diff, the commands, and their output before accepting a coder's result. A reviewer's verdict holds only for the commit it names. Verify the final commit yourself before calling it merge-ready. **Why**: delegation multiplies the places where an unchecked claim becomes a shipped defect. **The test**: for the final commit, what evidence did the main session itself look at or run?
+
+### Use only what the task needs
+
+A question gets an answer; a typo gets a direct fix with its checks; an ordinary bug fix gets a coder and a reviewer; a large feature may get an investigator and several coder assignments in sequence. Two worker roles are the standard for engineering work, not a quota. **Why**: every extra worker costs time and context, and ceremony hides the work. **The test**: for each worker started, what would have gone wrong without it?
+
+### Stop only where a decision is needed
+
+Ask the user only when the acceptance criteria are unclear, at a design or contract gate, when instructions conflict and precedence does not settle it, when a worker is blocked on a prompt only the user may answer, and before merging, deploying, or approving. Do not ask about steps this workflow already defines: reviewing the work, fixing review findings, pushing the task branch, and opening the PR are part of the job. Decide reversible matters yourself and record them. **Why**: a run that asks about everything stalls, and one that asks about nothing crosses boundaries. **The test**: was each question to the user one that only the user could answer? See [conflict-resolution.md](references/conflict-resolution.md).
+
+## Workflow
+
+| Step | What happens | Read |
+|---|---|---|
+| 1. Receive and understand | Read the issue and the repository context (instructions and Git state; a full look the first time, a refresh later). State the outcome, scope, and acceptance criteria; when the issue is unclear or needs a design decision, that is what `superpowers:brainstorming` is for: it works out the design with the user. Identify the kind of work and any design, contract, or approval gate. When asked to pick an issue, pick one nobody is working on: skip issues with an existing branch, worktree, open PR, or `.pm/` task for them. If the task already has work in progress, continue from it (check it, then review it) instead of asking whether to keep it. Start no worker before the task is understood | [project-context-discovery.md](references/project-context-discovery.md), [repository-adaptation.md](references/repository-adaptation.md) |
+| 2. Prepare | Check Git status and branch; choose the workspace per the repository's rules. Build or refresh the capability map. Decide the verification the task needs. A task with several steps gets a plan, and `superpowers:writing-plans` is the way to write one; keep it at `.pm/<task-id>/plan.md` for the coder's brief. When it asks who executes the plan, the answer is the coder. Decide whether workers are needed, and choose the runtime. Create the task state for anything beyond a small task | [repository-adaptation.md](references/repository-adaptation.md), [runtime-adapters.md](references/runtime-adapters.md), [execution-lifecycle.md](references/execution-lifecycle.md) |
+| 3. Start workers | **If `HERDR_ENV=1` (you are inside Herdr), start the coder and the reviewer as Herdr sessions, not sub-agents:** `herdr worktree create --cwd <repo> --branch <task branch> --base <base> --label <task-id> --no-focus` creates the task's own workspace; take the coder's pane id from its JSON reply. For the reviewer, create its own read-only checkout of the PR branch: `herdr worktree create --cwd <repo> --branch review/<task-id> --base <task branch> --label <task-id>-review --no-focus`, and take its pane id from the reply. The reviewer never works in the coder's folder; for each round it moves its own checkout to the PR's new head (`git fetch` and `git reset --hard <head sha>` in its own worktree). Never split from your own pane: `HERDR_PANE_ID` can be stale, and other sessions may share your folder. Then `herdr agent start <task-id>-coder --kind claude --pane <pane id>`, then send the brief with `herdr agent prompt <task-id>-coder "/poteto-mode <brief>"` followed by `herdr agent send-keys <task-id>-coder Enter`. Send that extra Enter only after a prompt that starts with `/`; after a plain prompt it submits whatever suggestion is in the input box. Start the reviewer the same way: `herdr agent prompt <task-id>-reviewer "/poteto-mode <review brief>"`, then Enter. Both workers run in poteto mode; the review brief names the review method (the repository's review skill, or pstack `interrogate`), and poteto mode carries it out. Read [runtime-adapters.md](references/runtime-adapters.md) for waiting, reading results, and closing. Use the sub-agent tool only outside Herdr, or when the user asks for it. Read [worker-contract.md](references/worker-contract.md) before writing the first brief. First create the task state (`.pm/<task-id>/state.md` after `git check-ignore`, or outside the repository when it is not ignored): any task with a worker has one, however short. Then start the coder with its brief. Every brief, the coder's and the reviewer's, carries the goal and criteria, the scope, the checks, the boundary (the coder commits, pushes the task branch, and opens or updates the PR; the reviewer edits nothing and posts its review on the PR; nobody merges; no credentials), the repository's own PR skill by path when it has one (for example `.agents/skills/pull-request/SKILL.md`), which the coder uses to open the PR and the reviewer to post its review, and the isolation line: keep every file you create inside the task's workspace, and put any separate checkout under `.pm/<task-id>/`, never in `/tmp`. Start the reviewer now and leave it idle, or when the PR is open. Record each worker as soon as it starts | [runtime-adapters.md](references/runtime-adapters.md), [worker-contract.md](references/worker-contract.md) |
+| 4. Coder implements and opens the PR | The coder follows the repository's skills and `poteto-mode` or the given methods, runs its checks, commits, pushes the task branch, and opens the PR with the repository's PR tool, then reports the PR and its head commit. The main session waits in steps, stays able to answer status questions, and checks the result before review | [worker-contract.md](references/worker-contract.md#checking-the-coders-result) |
+| 5. Independent review on the PR | The reviewer reviews the PR at its head commit against the issue, the criteria, and the repository's rules, posts its review on the PR (through the repository's PR tool), and returns approved, changes requested, or blocked with that commit | [worker-contract.md](references/worker-contract.md#the-reviewer-brief) |
+| 6. Review loop | Route actionable findings to the coder, who pushes fixes to the same PR; check the new head commit; the reviewer reviews the PR again, until approved or blocked. After two failed rounds on the same thing, change the approach before trying again | [worker-contract.md](references/worker-contract.md#the-review-loop) |
+| 7. Merge readiness | Before calling it merge-ready, verify the final state the way `superpowers:verification-before-completion` describes. Confirm on the provider that the PR's head is the approved commit. Then: criteria met and checks passing on the final commit, CI green, the reviewer's approval on that commit, the repository's approvals, no blocker. Merging needs the user's explicit go-ahead; without it, stop at merge-ready and report | [worker-contract.md](references/worker-contract.md#merge-readiness), [conflict-resolution.md](references/conflict-resolution.md#side-effect-and-delivery-boundaries), [authentication-and-permissions.md](references/authentication-and-permissions.md) |
+| 8. Merge and close | When authorized: merge through the repository's workflow, confirm it on the provider, record the reference. Then close the workers the main session owns, stop anything of its own still running, clean up the task's worktrees and branches per the repository's rules, write the final report, then the retrospective: append one line to the repository's retrospective log if it keeps one (for example `.pm/retros.md`, in its format: `<date> <task>: shipped #<PR> (<sha>). Hurt: <what caused rework>. Changed: <what to do differently>`), and put the same in the report. Any proposed change to this skill, the repository's skills or instructions, or the workflow is only a proposal: list it in the report and change nothing until a human approves it | [runtime-adapters.md](references/runtime-adapters.md#ownership-and-cleanup), [execution-lifecycle.md](references/execution-lifecycle.md) |
+
+Go back a step whenever something learned changes an earlier answer, such as a bug fix that turns out to need a migration, and record why. Close workers before the merge only if the user cancels or asks to stop.
+
+**Never miss a worker finishing: watch the PR.** After every hand-off, start one background watcher with this skill's `scripts/watch.py`, so the runtime wakes you when something happens. Do not wait on screen text or guess from `herdr pane read`.
+
+- **Watch the PR** when the repository's PR tool can print the PR's head and its reviews as JSON (CDP: `pr.py reviews <n>`):
+  `python3 <skill dir>/scripts/watch.py pr --cmd "<that command>" --head <current head sha> --seen <number of reviews now> --worker <worker name>`
+- **Watch the session** when it cannot: tell the worker to write its result file as its very last step, then
+  `python3 <skill dir>/scripts/watch.py file --path .pm/<task-id>/<role>-<round>.md --worker <worker name>`
+
+Run it in the background. When it ends it prints one event; act on it at once, without being asked:
+
+| Event | Do |
+|---|---|
+| `pushed` | The coder pushed. Check the new head, then send it to the reviewer and watch again |
+| `reviewed` | Read the review's verdict. Changes requested: send the findings to the coder and watch again. Approved on the current head: go to merge readiness |
+| `written` | Read the result file and act on it as above |
+| `blocked` | Tell the user what the worker is waiting on |
+| `stalled` | The worker stopped without pushing or reviewing: read its last message with `herdr agent read <name> --source recent-unwrapped` and decide |
+| `timeout` | Check the worker's status and the PR, then watch again |
+
+Keep one watcher per hand-off. A coder's fix and a reviewer's verdict both show up on the PR, so one PR watcher covers the whole loop.
+
+**When the user asks how it is going**, answer from the task state and the workers' current status: the step, each worker's state, the latest commit and verdict, the blocker, the next action, and the delivery state. Then carry on; do not restart or re-ask what is decided. A new session resumes from the state after checking it against the repository and the runtime. See [execution-lifecycle.md](references/execution-lifecycle.md).
+
+## External actions
+
+Giving this skill a task authorizes the task's normal delivery: committing on the task branch, pushing that branch, and opening or updating its PR (and posting the reviewer's verdict where the repository's PR process does that), unless the user or the repository says otherwise. Merging, approving, deploying, and changing production or another external system need the user's explicit go-ahead. Each external action still needs the identity authenticated on its channel, the technical permission for it, and the repository's policy and gates to allow it; available credentials, a reviewer's approval, and merge readiness are not a go-ahead to merge. When a push or PR fails for missing access, report it as blocked; never try an action just to find out whether it is allowed. Run only the authorized action and its direct prerequisites, confirm the result on the provider, and stop before the side effect when a condition is missing. Never search for or extract credentials, never ask the user to paste a secret, and give workers an action scope, never credentials. Details: [conflict-resolution.md](references/conflict-resolution.md#side-effect-and-delivery-boundaries), [authentication-and-permissions.md](references/authentication-and-permissions.md).
+
+## Optional: integrating into a repository
+
+Integration is not a step of the issue workflow. The main session calls it only when it is wanted:
+
+- the user asks to install, apply, adapt, or evaluate the engineering lead in a repository; or
+- while preparing a task, the main session finds that the repository gives it no basis it needs (no instruction to use it, no capability map, no definition of merge-ready, no runtime allowed), and the user agrees to set that up.
+
+Otherwise, run the issue with what discovery and [repository-adaptation.md](references/repository-adaptation.md) find, and mention any gap in the final report. When integration is called, follow [integration-playbook.md](references/integration-playbook.md) with its completion criteria in [integration-contract.md](references/integration-contract.md): audit without changing anything, design per repository, wait for the user where it changes ownership, protected rules, gates, or delivery permissions, integrate while preserving existing behavior, then verify with real scenarios. Integration is done when the contract's criteria are met with evidence, not when files were copied.
+
+## Final report
+
+Report the outcome against each acceptance criterion with its evidence on the final commit; the workers used and the runtime; the review rounds and how findings were resolved; the decisions made; the delivery state of each step, every one listed with its state (implemented, verified, pushed, PR opened, reviewed, approved, merged, deployed: complete, not reached, not requested, or not applicable); what is still open; and the retrospective. Give the result (done, partially done, or blocked) separately from the delivery state. Size it to the task. See [execution-lifecycle.md](references/execution-lifecycle.md#final-report).

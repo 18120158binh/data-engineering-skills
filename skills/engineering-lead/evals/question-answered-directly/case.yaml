@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: question-answered-directly
+expected_outcome: |
+  For a question about how the code works, the main session answers it itself from the code, with file references: the daily total sums the orders rows for the day, and because load appends, loading the same day twice doubles it. It starts no coder or reviewer, creates no branch, worktree, or state file, and changes no files.
+context:
+  scaffold_script: place-files.sh

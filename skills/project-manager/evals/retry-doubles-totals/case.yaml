@@ -1,6 +1,0 @@
-schema_version: "1.1"
-name: retry-doubles-totals
-expected_outcome: |
-  The agent reproduces the doubled total for 2026-10-14 by loading the same file twice, finds from logs/load-2026-10-14.log that the scheduler retried a load that had already inserted its rows, writes a test that fails because a second load of the same day doubles the total, then fixes load.py so a load for a day replaces that day's rows (delete then insert in one transaction, or an upsert on order_id). It does not dedupe in report.py, pastes the failing and then passing output, runs the full suite, commits the test before or with the fix, and hands back with the workflow it used and a result status.
-context:
-  scaffold_script: place-files.sh

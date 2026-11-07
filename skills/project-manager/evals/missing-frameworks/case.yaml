@@ -1,6 +1,0 @@
-schema_version: "1.1"
-name: missing-frameworks
-expected_outcome: |
-  Run with neither superpowers nor pstack installed. The agent finds the AGENTS.md rules, finds no project workflow, and finds that the default providers are missing. It tells the user which are missing, which phases needed them, and how to install each. It does not claim to follow brainstorming, writing-plans, poteto-mode, or any other skill it does not have, and does not present a remembered version of them as the real thing. It either asks the user how to proceed, or continues with a plain approach that it labels as its own judgment, still obeying the AGENTS.md test rule.
-context:
-  scaffold_script: place-files.sh

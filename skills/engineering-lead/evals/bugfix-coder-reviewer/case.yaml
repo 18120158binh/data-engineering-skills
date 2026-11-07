@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: bugfix-coder-reviewer
+expected_outcome: |
+  The main session reads the bug report, the code, and AGENTS.md before starting any worker. It starts a coder subagent with a brief (goal, acceptance criteria, scope, the test command, a local commit allowed, no push or PR), and the coder fixes load.py so a reload of a day replaces its rows, with a test that fails before the fix. The main session reads the coder's diff and evidence itself, then starts a separate reviewer subagent that reviews the named commit without editing files. It checks the suite on the final commit itself. The repository has no remote, so push and PR are not applicable; it reports merge-ready, does not merge, and lists the state of each delivery step.
+context:
+  scaffold_script: place-files.sh
