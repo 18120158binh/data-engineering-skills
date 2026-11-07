@@ -50,7 +50,13 @@ def worker_status(name):
         ).stdout
         data = json.loads(out).get("result", {})
         return (data.get("agent") or data).get("agent_status")
-    except (OSError, TypeError, ValueError, subprocess.SubprocessError):
+    except (
+        AttributeError,
+        OSError,
+        TypeError,
+        ValueError,
+        subprocess.SubprocessError,
+    ):
         return None
 
 
