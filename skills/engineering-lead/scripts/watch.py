@@ -43,19 +43,32 @@ def worker_status(name):
         out = subprocess.run(
             ["herdr", "agent", "get", name],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             check=False,
         ).stdout
         data = json.loads(out).get("result", {})
         return (data.get("agent") or data).get("agent_status")
-    except (OSError, ValueError, subprocess.SubprocessError):
+    except (
+        AttributeError,
+        OSError,
+        TypeError,
+        ValueError,
+        subprocess.SubprocessError,
+    ):
         return None
 
 
 def pr_state(cmd):
     out = subprocess.run(
-        cmd, shell=True, capture_output=True, text=True, timeout=120, check=False
+        cmd,
+        shell=True,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+        check=False,
     ).stdout
     data = json.loads(out)
     return data["head"], data.get("reviews", [])
@@ -89,7 +102,13 @@ def main():
         if args.mode == "pr":
             try:
                 head, reviews = pr_state(args.cmd)
-            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+            except (
+                OSError,
+                TypeError,
+                ValueError,
+                KeyError,
+                subprocess.SubprocessError,
+            ):
                 head, reviews = args.head, []
             if head != args.head:
                 finish("pushed", {"head": head, "reviews": len(reviews)}, 0)
