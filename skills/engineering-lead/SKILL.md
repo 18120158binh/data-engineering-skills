@@ -2,7 +2,7 @@
 name: engineering-lead
 description: Run an engineering issue from intake to merge as the main session, coordinating a coder and an independent reviewer. Understand the task with the repository's instructions and Superpowers methods, adapt to the repository's own agents, skills, tools, and policy, start the coder (with pstack poteto-mode where available) and the reviewer through Herdr persistent sessions or native subagents, check their results against evidence, run the review loop until clean, establish merge readiness, merge only with explicit authorization, then close the workers it owns. Keeps task state so it can answer "how is it going" mid-run and resume later. Use it for bug fixes, features, refactoring, migrations, review feedback, and other engineering issues. It can also, when asked, integrate itself into a repository ("apply engineering-lead to this repo").
 metadata:
-  version: "0.6"
+  version: "0.6.1"
 ---
 
 # Engineering lead
