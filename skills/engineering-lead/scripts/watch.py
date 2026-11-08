@@ -17,14 +17,14 @@ Watch the PR (preferred):
     reviewed  more than <n> reviews, the newest on the current head: a verdict is in
     blocked   a Herdr worker is blocked on a prompt (needs the user)
     stalled   every Herdr worker given is done or idle and nothing happened on the PR for 10 minutes:
-              read its last message (`herdr agent read <name> --source recent-unwrapped`);
+              read each listed worker's last message (`herdr agent read <name> --source recent-unwrapped`);
               a worker waiting on its own background shells (a build, a test run) also
               shows idle, so check the screen before acting
     unreadable  the PR command failed 3 times in a row: fix the command or the access
     timeout   nothing happened before --timeout
 
 Watch the session (fallback, when the PR tool cannot list reviews):
-  watch.py file --path <result file> [--worker <herdr name>] [--interval 15] [--timeout 7200]
+  watch.py file --path <result file> [--worker <herdr name>]... [--interval 15] [--timeout 7200]
 
   Events: written (the result file exists and is not empty), blocked, stalled, timeout.
 

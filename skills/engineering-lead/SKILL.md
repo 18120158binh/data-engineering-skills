@@ -62,10 +62,10 @@ Run it in the background. When it ends it prints one event; act on it at once, w
 | Event | Do |
 |---|---|
 | `pushed` | The coder pushed. In Herdr, never send the head to the reviewer yourself: the coder does, and its hand-off can arrive after this event. Watch again; the watcher reports `stalled` if both workers stay idle. Otherwise check the new head, send it to the reviewer, and watch again |
-| `reviewed` | Read the review's verdict. Changes requested: in Herdr the reviewer has sent the findings to the coder, so count the round and watch again; otherwise send the findings to the coder and watch again. Approved on the current head: go to merge readiness |
+| `reviewed` | Read the review's verdict. Changes requested: in Herdr the reviewer has sent the findings to the coder, so read the findings it marked for you (the user's judgment, or ones it would drop) and act on them, count the round, and watch again; otherwise send the findings to the coder and watch again. Approved on the current head: go to merge readiness |
 | `written` | Read the result file and act on it as above |
 | `blocked` | Tell the user what the worker is waiting on |
-| `stalled` | The worker stopped without pushing or reviewing: read its last message with `herdr agent read <name> --source recent-unwrapped` and decide |
+| `stalled` | Every worker watched stopped without pushing or reviewing: read the last message of each one listed with `herdr agent read <name> --source recent-unwrapped` and decide |
 | `timeout` | Check the worker's status and the PR, then watch again |
 
 Keep one watcher per hand-off. A coder's fix and a reviewer's verdict both show up on the PR, so one PR watcher covers the whole loop.
