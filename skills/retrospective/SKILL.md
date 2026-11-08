@@ -56,7 +56,7 @@ A decision that turned out right is a finding too. Note what made it right.
 For each problem, ask why until you reach something in the process: a brief, a contract, a template, a skill, a check, a missing script, a missing number, or a premise everyone assumed.
 
 - Group problems that share a cause. Two fixes that failed on the same premise point at the premise, not at the fixes.
-- **A one-off is not a lesson.** Keep a lesson when it happened at least twice, or once at a high cost.
+- **A one-off is not a lesson.** Keep a lesson when it happened at least twice, or once at a high cost. A fact about the owner's machine, clock, shell, or habits is not a one-off even when it happened once: it will hold next time, so it goes to memory.
 - **A rule that existed and was not followed** is a different lesson from a missing rule. Find out why it was not followed: the skill did not load, its description did not match the task, the rule was buried, or it was wrong.
 - **A lesson that came back after a text-only fix** means the text did not work. Search the whole log and history for the same symptom and count the earlier occurrences and how each was fixed; do not judge it from memory. The next change is a script, a check, or a test, and the old sentence goes. **Why**: a rule an agent must remember fails the same way every time it is under load; a fix in structure does not.
 
