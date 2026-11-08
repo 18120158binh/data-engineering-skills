@@ -170,7 +170,7 @@ When the repository keeps a lesson log, write each lesson there as it happens, n
 Next action: <where> / <change> / <status>
 ```
 
-`where` is the place that owns the fix: a test or script, a project skill or doc, a generic skill, memory, or `none` for a one-off. `change` is the smallest edit, in one sentence. `status` is `done <commit or PR>` only when the change has landed, otherwise `open`. When a lesson repeats an earlier one, start with `Repeats lesson <n>.`: the earlier fix was text that did not hold, so the next action is a script or a check. **Why**: a lesson logged without a destination is read once and lost; in one two-day run, 36 of 57 logged lessons were still open at the end, and the one fixed only in text came back three times.
+`where` is the place that owns the fix, as in the routing table of the `retrospective` skill (a test or script, a contract, a decision record, a project or generic skill, `AGENTS.md`, memory), or `none` for a one-off. Number the lessons, so a repeat can name the one it repeats. `change` is the smallest edit, in one sentence. `status` is `done <commit or PR>` only when the change has landed, otherwise `open`. When a lesson repeats an earlier one, start with `Repeats lesson <n>.`: the earlier fix was text that did not hold, so the next action is a script or a check. **Why**: a lesson logged without a destination is read once and lost; in one two-day run, 36 of 57 logged lessons were still open at the end, and the one fixed only in text came back three times.
 
 At the end of a delivery, or when several lessons are open, run the `retrospective` skill over the log (pstack `reflect` when it is not installed). It routes each open lesson to one change.
 

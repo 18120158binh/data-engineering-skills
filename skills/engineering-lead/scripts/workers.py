@@ -17,7 +17,8 @@ Every call to herdr passes its arguments as a list, so no shell rewrites a path
       Sends the brief read from the file. With --slash, sends "/<slash> <brief>",
       presses Enter (Claude's command menu takes the first one), and confirms the
       worker started; if the brief still sits on the input line, presses Enter once more.
-      Prints {"event": "working" | "blocked" | "not_started", ...}.
+      Prints {"event": "working" | "blocked" | "not_started" | "failed", ...}; "failed"
+      means herdr gave no state counter, so the script did not send.
 
   workers.py list [--task <task-id>] [--max <n>]
       Lists live agents named <task-id> or <task-id>-<role> (all named agents without it),

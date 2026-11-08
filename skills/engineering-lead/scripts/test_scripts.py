@@ -76,6 +76,12 @@ class WatchTest(unittest.TestCase):
         code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--interval", "0")
         self.assertEqual((code, event["event"], event["reviews"]), (0, "pushed", 0))
 
+    def test_a_pair_is_quiet_only_when_both_workers_are(self):
+        import watch
+        self.assertFalse(watch.all_quiet({"t1-coder": "idle", "t1-reviewer": "working"}))
+        self.assertTrue(watch.all_quiet({"t1-coder": "idle", "t1-reviewer": "done"}))
+        self.assertFalse(watch.all_quiet({}))
+
     def test_a_broken_pr_command_is_reported_not_waited_out(self):
         cmd = py_cmd("print('not json')")
         code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--interval", "0", "--timeout", "30")
