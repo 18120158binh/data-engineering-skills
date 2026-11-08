@@ -86,12 +86,16 @@ class WorkersTest(unittest.TestCase):
         return argparse.Namespace(**kw)
 
     def test_refuses_the_home_folder(self):
-        code, event = call(workers.spawn, self.args(repo=str(pathlib.Path.home()), max=None))
+        fake = FakeHerdr()
+        with mock.patch.object(workers, "herdr", fake):
+            code, event = call(workers.spawn, self.args(repo=str(pathlib.Path.home()), max=None))
+        self.assertEqual(fake.calls, [])
         self.assertEqual((code, event["event"]), (2, "refused"))
 
     def test_refuses_a_folder_that_is_not_a_repository(self):
         with tempfile.TemporaryDirectory() as d:
-            code, event = call(workers.spawn, self.args(repo=d, max=None))
+            with mock.patch.object(workers, "herdr", FakeHerdr()):
+                code, event = call(workers.spawn, self.args(repo=d, max=None))
         self.assertEqual(event["reason"], "not a Git repository")
 
     def test_refuses_to_start_past_the_cap(self):
@@ -130,15 +134,54 @@ class WorkersTest(unittest.TestCase):
         self.assertIn(("agent", "prompt", "t1-coder", "/poteto-mode " + brief), fake.calls)
         self.assertEqual((code, event["event"]), (0, "working"))
 
-    def test_an_unsubmitted_prompt_gets_one_more_enter(self):
-        fake = FakeHerdr(statuses=["idle", "idle", "working"], screen_text="> /poteto-mode Fix the retry")
-        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", fake), \
-                mock.patch.object(workers.time, "time", side_effect=[0, 0, 100, 0, 0, 0]):
+    def send_with(self, fake, brief, statuses):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", fake),                 mock.patch.object(workers, "wait_for", side_effect=statuses):
             f = pathlib.Path(d) / "brief.md"
-            f.write_text("Fix the retry", encoding="utf-8")
-            code, event = call(workers.send, self.args(worker="t1-coder", brief_file=str(f), slash="poteto-mode", settle=1))
-        self.assertEqual(sum(1 for c in fake.calls if c[:2] == ("agent", "send-keys")), 2)
-        self.assertEqual(event["event"], "working")
+            f.write_text(brief, encoding="utf-8")
+            return call(workers.send, self.args(worker="t1-coder", brief_file=str(f), slash="poteto-mode", settle=1))
+
+    def enters(self, fake):
+        return sum(1 for c in fake.calls if c[:2] == ("agent", "send-keys"))
+
+    def test_a_brief_left_in_the_input_box_gets_one_more_enter(self):
+        fake = FakeHerdr(screen_text="Earlier output\n\u2502 > /poteto-mode Fix the retry that doubles rows")
+        code, event = self.send_with(fake, "Fix the retry that doubles rows", ["idle", "working"])
+        self.assertEqual((self.enters(fake), event["event"]), (2, "working"))
+
+    def test_a_brief_only_in_the_transcript_gets_no_extra_enter(self):
+        fake = FakeHerdr(screen_text="> /poteto-mode Fix the retry that doubles rows\nWorking on it...\n\u2502 > ")
+        code, event = self.send_with(fake, "Fix the retry that doubles rows", ["idle"])
+        self.assertEqual((self.enters(fake), code, event["event"]), (1, 1, "not_started"))
+
+    def test_a_worker_that_already_finished_counts_as_started(self):
+        fake = FakeHerdr(screen_text="\u2502 > /poteto-mode Fix the retry")
+        code, event = self.send_with(fake, "Fix the retry", ["done"])
+        self.assertEqual((self.enters(fake), code, event["event"]), (1, 0, "working"))
+
+    def test_an_empty_brief_is_refused_before_anything_is_sent(self):
+        fake = FakeHerdr()
+        code, event = self.send_with(fake, "  \n", [])
+        self.assertEqual((code, event["event"], fake.calls), (2, "refused", []))
+
+    def test_spawn_without_a_live_agent_reports_failure(self):
+        fake = FakeHerdr(statuses=[None])
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", fake), \
+                mock.patch.object(workers, "wait_for", return_value=None):
+            (pathlib.Path(d) / ".git").mkdir()
+            code, event = call(workers.spawn, self.args(repo=d, branch="t", base="main", label="t1", name="t1-coder", max=None))
+        self.assertEqual((code, event["event"]), (1, "failed"))
+
+    def test_an_unreadable_agent_list_fails_closed(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", lambda *a, **k: '{"result": null}'):
+            (pathlib.Path(d) / ".git").mkdir()
+            code, event = call(workers.spawn, self.args(repo=d, max=4))
+        self.assertEqual((code, event["event"]), (1, "failed"))
+
+    def test_list_does_not_match_a_longer_task_id(self):
+        agents = [{"name": "t1-coder"}, {"name": "t10-coder"}, {"name": "t1"}]
+        with mock.patch.object(workers, "herdr", FakeHerdr(agents=agents)):
+            code, out = call(workers.list_workers, self.args(task="t1", max=None))
+        self.assertEqual(sorted(w["name"] for w in out["workers"]), ["t1", "t1-coder"])
 
     def test_list_shows_only_the_task_workers_and_flags_the_cap(self):
         agents = [{"name": "t1-coder", "agent_status": "idle"}, {"name": "t2-coder"}, {"agent_status": "working"}]

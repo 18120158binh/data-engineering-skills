@@ -16,11 +16,11 @@ Every call to herdr passes its arguments as a list, so no shell rewrites a path
   workers.py send <worker> --brief-file <path> [--slash poteto-mode] [--settle 20]
       Sends the brief read from the file. With --slash, sends "/<slash> <brief>",
       presses Enter (Claude's command menu takes the first one), and confirms the
-      worker started; if the prompt still sits unsubmitted, presses Enter once more.
+      worker started; if the brief still sits on the input line, presses Enter once more.
       Prints {"event": "working" | "blocked" | "not_started", ...}.
 
   workers.py list [--task <task-id>] [--max <n>]
-      Lists live agents whose name starts with <task-id> (all named agents without it),
+      Lists live agents named <task-id> or <task-id>-<role> (all named agents without it),
       with status and folder, and the live count against <max>. Run it after a merge:
       close every worker it lists for the task.
 
@@ -54,9 +54,10 @@ def herdr(*args, timeout=60):
 
 def parse(out):
     try:
-        return json.loads(out).get("result", {})
+        result = json.loads(out).get("result")
     except (AttributeError, ValueError):
         return {}
+    return result if isinstance(result, dict) else {}
 
 
 def find_key(data, key):
@@ -73,12 +74,22 @@ def find_key(data, key):
 
 
 def live_agents():
-    return parse(herdr("agent", "list")).get("agents", [])
+    agents = parse(herdr("agent", "list")).get("agents")
+    if not isinstance(agents, list):
+        finish("failed", 1, step="agent list", reason="herdr did not return an agent list")
+    return agents
 
 
 def status(name):
     data = parse(herdr("agent", "get", name))
-    return (data.get("agent") or data).get("agent_status")
+    agent = data.get("agent") if isinstance(data.get("agent"), dict) else data
+    return agent.get("agent_status")
+
+
+def unsubmitted(name, brief):
+    """True when the brief's start sits on the input-box line, not just in the transcript above it."""
+    lines = [line for line in screen(name, 12).splitlines() if ">" in line]
+    return bool(lines) and brief.splitlines()[0][:30] in lines[-1]
 
 
 def screen(name, lines=15):
@@ -126,21 +137,26 @@ def spawn(args):
     current = wait_for(args.name, ("idle", "blocked"), 60)
     if current == "blocked":
         finish("blocked", 1, name=args.name, pane_id=pane, screen=screen(args.name))
+    if current != "idle":
+        finish("failed", 1, step="agent start", name=args.name, pane_id=pane, status=current, screen=screen(args.name))
     finish("started", 0, name=args.name, pane_id=pane, status=current)
 
 
 def send(args):
     brief = pathlib.Path(args.brief_file).read_text(encoding="utf-8").strip()
+    if not brief:
+        finish("refused", 2, reason="the brief file is empty", path=args.brief_file)
     text = f"/{args.slash} {brief}" if args.slash else brief
     herdr("agent", "prompt", args.worker, text, timeout=120)
     if args.slash:
         herdr("agent", "send-keys", args.worker, "Enter")
-    current = wait_for(args.worker, ("working", "blocked"), args.settle)
-    if current not in ("working", "blocked") and brief.splitlines()[0][:30] in screen(args.worker, 30):
+    started = ("working", "blocked", "done")
+    current = wait_for(args.worker, started, args.settle)
+    if current not in started and unsubmitted(args.worker, brief):
         herdr("agent", "send-keys", args.worker, "Enter")
-        current = wait_for(args.worker, ("working", "blocked"), args.settle)
-    if current == "working":
-        finish("working", 0, worker=args.worker)
+        current = wait_for(args.worker, started, args.settle)
+    if current in ("working", "done"):
+        finish("working", 0, worker=args.worker, status=current)
     if current == "blocked":
         finish("blocked", 1, worker=args.worker, screen=screen(args.worker))
     finish("not_started", 1, worker=args.worker, status=current, screen=screen(args.worker))
@@ -151,7 +167,7 @@ def list_workers(args):
     owned = [
         {"name": a["name"], "status": a.get("agent_status"), "cwd": a.get("cwd"), "pane_id": a.get("pane_id")}
         for a in agents
-        if a.get("name") and (not args.task or a["name"].startswith(args.task))
+        if a.get("name") and (not args.task or a["name"] == args.task or a["name"].startswith(args.task + "-"))
     ]
     print(json.dumps({"live": len(agents), "max": args.max, "workers": owned}, indent=2, ensure_ascii=False))
     sys.exit(1 if args.max is not None and len(agents) > args.max else 0)

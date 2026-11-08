@@ -64,11 +64,11 @@ A worker in `blocked` is waiting on a prompt: folder trust, a permission request
 
 ## Native subagents
 
-The harness creates a fresh agent per assignment and ends it when it returns.
+The harness creates an agent per call. Where it can send a later message to an agent that has returned, use that to keep one coder and one reviewer for the whole task.
 
 | Operation | How |
 |---|---|
-| spawn and send | One call to the agent tool, with the brief. The coder is `poteto-agent` when pstack defines it (it follows poteto-mode's principles, but cannot run poteto-mode's playbooks); otherwise a general-purpose agent with the same coder contract, told which principles to follow. The reviewer is a fresh general-purpose agent |
+| spawn and send | One call to the agent tool, with the brief. The coder is `poteto-agent` when pstack defines it (it follows poteto-mode's principles, but cannot run poteto-mode's playbooks); otherwise a general-purpose agent with the same coder contract, told which principles to follow. The reviewer is a general-purpose agent that did not write the change |
 | wait | The call returns with the result; a background agent sends a notice when done |
 | read | The returned message, and any file the brief asked for |
 | close | Handled by the harness. A background agent still running can be stopped with the harness's stop mechanism |
@@ -106,6 +106,6 @@ Act only on workers whose identity came from the main session's own spawn. Never
 
 Use a worktree only where the repository's rules allow one; follow its documented path and branch conventions when it has them.
 
-- **Herdr:** `herdr worktree create --cwd <repository> --branch <task branch> --base <base ref> --path <path per the repository's convention> --label <task-id> --no-focus` creates the Git worktree and a Herdr workspace for it with a ready pane. Start the coder in that pane, and the reviewer in a pane split from it. A worktree of a repository the agent already trusts started without a trust prompt in the probe; a path outside any trusted repository may still prompt.
+- **Herdr:** `herdr worktree create --cwd <repository> --branch <task branch> --base <base ref> --path <path per the repository's convention> --label <task-id> --no-focus` creates the Git worktree and a Herdr workspace for it with a ready pane. Start the coder in that pane. The reviewer gets its own worktree on a review branch, created the same way ([Herdr](#herdr-persistent-sessions)). A worktree of a repository the agent already trusts started without a trust prompt in the probe; a path outside any trusted repository may still prompt.
 - **Native subagents, or Herdr not in use:** `git worktree add`, at the repository's conventional path.
 - **Cleanup**, after the merge or on cancellation: `herdr worktree remove --workspace <id>` removes the worktree, its Herdr workspace, and the agents in it. It leaves the branch; delete the task branch only per the repository's rules, and only once it is merged or the user agrees. Use `git worktree remove` for a worktree made with Git.
