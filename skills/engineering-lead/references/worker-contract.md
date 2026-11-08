@@ -76,7 +76,7 @@ Writing code is not finishing the task. "Done" is the coder's claim; the main se
 
 ## Checking the coder's result
 
-Before sending anything to review:
+With native subagents, before sending anything to review (a Herdr pair skips this; the main session checks the approved commit at merge readiness):
 
 1. Read the diff at the reported commit. Changes outside the brief's scope go back, or become their own assignment.
 2. Check each criterion against its evidence. A criterion with no evidence is not met. Re-run the checks that are cheap or that matter most.
@@ -110,6 +110,8 @@ The reviewer checks correctness, the acceptance criteria, regression risk, the r
 
 ## The review loop
 
+With native subagents, the main session relays each round:
+
 1. The main session reads the findings and decides what is actionable: it may drop a finding with a reason, or take one to the user when it needs their judgment.
 2. The coder gets specific feedback (the finding, the evidence, what must hold after the fix), fixes, re-runs the checks, commits, and pushes to the same PR.
 3. The main session checks the new result as above.
@@ -118,10 +120,10 @@ The reviewer checks correctness, the acceptance criteria, regression risk, the r
 
 ### In Herdr: the pair talks directly
 
-In Herdr, the coder and the reviewer hand each round to each other; the main session does not relay. Both briefs carry both workers' names, the PR, and how to hand off: write the message to a file in your own workspace and send it with `python3 <skill dir>/scripts/workers.py send <peer> --brief-file <file>`.
+In Herdr, the coder and the reviewer hand each round to each other; the main session does not relay. Before starting the pair, the main session copies `scripts/workers.py` into each worker's `.pm/inputs/`, and each brief carries both workers' names, the PR, and how to hand off: write the message to a file in your own workspace and send it with `python3 .pm/inputs/workers.py send <peer> --brief-file <file>`. Where the worker's harness asks permission for that command, allowing it is a user step, listed with the brief's side effects and done before the pair starts.
 
-- The coder, after each push: sends the reviewer the PR and the new head SHA.
-- The reviewer, after each review: posts it on the PR with the verdict and the label, then sends the coder the review's link and every required finding still open from any round.
+- The coder, after each push: sends the reviewer the PR, the new head SHA, and its evidence (the checks it ran and their results), inline in the message.
+- The reviewer, after each review: posts it on the PR with the verdict and the label, then sends the coder the review's link and every required finding still open from any round. A finding that needs the user's judgment, or one it would drop, it marks as such on the PR and does not send to the coder; the main session takes it from there.
 - The main session: starts the pair, watches the PR for a verdict on the current head, counts the rounds, steps in after two failed rounds on the same finding, and checks the approved commit itself at merge readiness. It closes both after the merge.
 
 **Why**: when the main session relayed every hand-off, each round gained a hop and a delay, and findings were lost in the retelling. With native subagents, which cannot reach each other, the main session still relays as in the steps above.

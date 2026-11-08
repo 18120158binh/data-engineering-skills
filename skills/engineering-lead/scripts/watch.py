@@ -5,15 +5,18 @@ Run it in the background after every hand-off, so the runtime wakes the main ses
 
 Watch the PR (preferred):
   watch.py pr --cmd "<command printing the PR's head and reviews as JSON>" --head <sha> --seen <n>
-           [--worker <herdr name>] [--interval 45] [--timeout 7200]
+           [--worker <herdr name>]... [--interval 45] [--timeout 7200]
+
+  Give --worker once per worker in the loop. In a Herdr pair that hands rounds to itself,
+  give both: one of them is always idle while the other works.
 
   The command must print {"head": "<sha>", "reviews": [{"commit": "<sha>", ...}, ...]},
   for example `python3 .agents/skills/pull-request/scripts/pr.py reviews 251`.
   Events:
     pushed    the PR head is no longer <sha>: the coder pushed (or anyone did)
     reviewed  more than <n> reviews, the newest on the current head: a verdict is in
-    blocked   the Herdr worker is blocked on a prompt (needs the user)
-    stalled   the Herdr worker is done or idle and nothing happened on the PR for 10 minutes:
+    blocked   a Herdr worker is blocked on a prompt (needs the user)
+    stalled   every Herdr worker given is done or idle and nothing happened on the PR for 10 minutes:
               read its last message (`herdr agent read <name> --source recent-unwrapped`);
               a worker waiting on its own background shells (a build, a test run) also
               shows idle, so check the screen before acting
@@ -79,6 +82,11 @@ def pr_state(cmd):
     return data["head"], data.get("reviews") or []
 
 
+def all_quiet(statuses):
+    """True when there are workers and none of them is working; one working worker keeps the loop alive."""
+    return bool(statuses) and all(s in ("done", "idle") for s in statuses.values())
+
+
 def finish(event, detail, code):
     print(json.dumps({"event": event, **detail}))
     sys.exit(code)
@@ -96,7 +104,7 @@ def main():
     f = sub.add_parser("file")
     f.add_argument("--path", required=True)
     for s in (pr, f):
-        s.add_argument("--worker")
+        s.add_argument("--worker", action="append", default=[])
         s.add_argument("--interval", type=int, default=45 if s is pr else 15)
         s.add_argument("--timeout", type=int, default=7200)
     args = p.parse_args()
@@ -128,13 +136,14 @@ def main():
         elif os.path.exists(args.path) and os.path.getsize(args.path) > 0:
             finish("written", {"path": args.path}, 0)
 
-        status = worker_status(args.worker)
-        if status == "blocked":
-            finish("blocked", {"worker": args.worker}, 1)
-        if status in ("done", "idle"):
+        statuses = {w: worker_status(w) for w in args.worker}
+        blocked = [w for w, s in statuses.items() if s == "blocked"]
+        if blocked:
+            finish("blocked", {"worker": blocked[0]}, 1)
+        if all_quiet(statuses):
             quiet_since = quiet_since or time.time()
             if time.time() - quiet_since > STALL_SECONDS:
-                finish("stalled", {"worker": args.worker, "status": status}, 1)
+                finish("stalled", {"workers": statuses}, 1)
         else:
             quiet_since = None
         time.sleep(args.interval)
