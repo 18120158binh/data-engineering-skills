@@ -14,7 +14,10 @@ Watch the PR (preferred):
     reviewed  more than <n> reviews, the newest on the current head: a verdict is in
     blocked   the Herdr worker is blocked on a prompt (needs the user)
     stalled   the Herdr worker is done or idle and nothing happened on the PR for 10 minutes:
-              read its last message (`herdr agent read <name> --source recent-unwrapped`)
+              read its last message (`herdr agent read <name> --source recent-unwrapped`);
+              a worker waiting on its own background shells (a build, a test run) also
+              shows idle, so check the screen before acting
+    unreadable  the PR command failed 3 times in a row: fix the command or the access
     timeout   nothing happened before --timeout
 
 Watch the session (fallback, when the PR tool cannot list reviews):
@@ -22,7 +25,8 @@ Watch the session (fallback, when the PR tool cannot list reviews):
 
   Events: written (the result file exists and is not empty), blocked, stalled, timeout.
 
-Exit code 0 for written, pushed, or reviewed; 1 for blocked, stalled, or timeout; 2 on a usage error.
+Exit code 0 for written, pushed, or reviewed; 1 for blocked, stalled, unreadable, or timeout;
+2 on a usage error.
 The script never reads a credential; the PR command does its own authentication.
 """
 
@@ -34,6 +38,7 @@ import sys
 import time
 
 STALL_SECONDS = 600
+MAX_FAILED_READS = 3
 
 
 def worker_status(name):
@@ -71,7 +76,7 @@ def pr_state(cmd):
         check=False,
     ).stdout
     data = json.loads(out)
-    return data["head"], data.get("reviews", [])
+    return data["head"], data.get("reviews") or []
 
 
 def finish(event, detail, code):
@@ -98,6 +103,7 @@ def main():
 
     start = time.time()
     quiet_since = None
+    failed_reads = 0
     while time.time() - start < args.timeout:
         if args.mode == "pr":
             try:
@@ -108,8 +114,13 @@ def main():
                 ValueError,
                 KeyError,
                 subprocess.SubprocessError,
-            ):
+            ) as err:
+                failed_reads += 1
+                if failed_reads >= MAX_FAILED_READS:
+                    finish("unreadable", {"error": repr(err)}, 1)
                 head, reviews = args.head, []
+            else:
+                failed_reads = 0
             if head != args.head:
                 finish("pushed", {"head": head, "reviews": len(reviews)}, 0)
             if len(reviews) > args.seen and reviews[-1].get("commit") == head:

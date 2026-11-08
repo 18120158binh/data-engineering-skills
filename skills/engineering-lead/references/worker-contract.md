@@ -46,13 +46,19 @@ A worker does not see the main session's conversation. Each assignment carries:
 - the workspace and branch;
 - the files and areas in scope, and the interfaces it must not change;
 - the constraints: contracts, gates, test policy;
-- the checks it must run, by command;
+- the checks it must run, by command. Fixtures that stand in for an external system's response (an API, a metrics query, a provider) are recorded real responses or the provider's documented examples. **Why**: a fixture written from the code's own assumption passes while the real call never matches. A new step that runs against live infrastructure (a bootstrap or node script, a migration, a permission grant) also gets a safe live run before delivery: read-only, idempotent, or a stub test the coder runs. **Why**: a step that was only read in review can still fail on its first live run, for a reason no reader sees, such as a missing permission;
+- the cross-cutting rules every change in this area must keep, each with the test that checks it (for example: every page checks the session itself, with a no-session test). When a review finds a new one, add it to the brief of every coder working in that area, not only the one whose PR it was found on. **Why**: a rule that lives only in reviews is learned again by each coder, one finding at a time;
+- the side effects: every write outside the task branch the work needs (cloud, cluster, secret store, Git remote, merge, delete), and for each who performs it: the worker, the main session, or the user. A write the worker's harness may block (applying infrastructure, writing a secret, a remote shell write, deleting branches) is planned from the start as a user step, with a ready script. Before an approved live operation, list every write it needs and get each permission in place before the first step. **Why**: the user's approval in the main session's chat does not reach a worker's session, and a blocked write discovered halfway leaves the system half changed;
 - the boundary: commit on the task branch, push it, and open the PR (or update it on a rework round) with the repository's PR tool; no merge, approval, or deploy; never credentials. If the push or PR fails for missing access, stop and report it, without workarounds. If the repository has no remote or PR process, commit locally and report the commit;
 - when to stop and report instead of guessing: an unresolved design decision, a silent contract, a missing dependency, a permission boundary, anything out of scope;
 - how to return the result: as its final message for a native subagent, or written to `.pm/<task-id>/coder-<round>.md` for a Herdr worker ([runtime-adapters.md](runtime-adapters.md#result-files)), with the contents listed below;
 - to keep every file it creates (notes, scratch checkouts, logs) inside the task's workspace; a separate checkout, if it needs one, goes under `.pm/<task-id>/`, never in `/tmp`.
 
-For a rework round, add the reviewer's findings to fix, the commit they were raised on, and what must not regress.
+For a rework round, the brief points the coder at every review on the PR, not only the latest, and lists every required finding still open from any round, each with the round it was raised in and what must not regress. The coder answers each finding by id. **Why**: a fix brief built from the latest review alone dropped two required findings from round 1, and only the reviewer noticed. The same coder and reviewer stay on the task across all rounds ([runtime-adapters.md](runtime-adapters.md)), so the brief can name the reviews instead of retelling them.
+
+### Parallel assignments
+
+When several coders work at once, list the files more than one of them will touch (route tables, shared components, a shared config) before starting them. Give each shared file one owner assignment; the others leave it alone or ask the owner. Merge the assignment that touches the most shared files first, and have each later one merge the new base before its review. **Why**: parallel lanes that each edit a shared file pass review alone and then conflict, or break each other, at merge.
 
 ## The coder result
 
@@ -98,7 +104,7 @@ The reviewer gets the material to judge for itself, not the coder's summary:
 - Findings, each with a severity, the file and line, what is wrong, the failure it causes, and the evidence (a reproduction, a failing check, the line).
 - The corrections required, kept separate from optional suggestions.
 
-The reviewer checks correctness, the acceptance criteria, regression risk, the repository's conventions, test coverage and evidence, and security or operational concerns where they apply.
+The reviewer checks correctness, the acceptance criteria, regression risk, the repository's conventions, test coverage and evidence, and security or operational concerns where they apply. It checks that each fixture standing in for an external response is real or documented, not copied from the code's assumption.
 
 ## The review loop
 
@@ -119,6 +125,7 @@ The main session declares a task merge-ready only when all of these hold, with e
 - every acceptance criterion is met on the final commit;
 - the checks the change needs pass on that commit, run by the main session or confirmed from CI for that SHA; evidence from an earlier commit does not count;
 - the required CI checks pass;
+- the checks pass on the head merged with the base's current tip: the provider's merge ref when it runs checks there, otherwise a trial merge the main session or the reviewer runs with the full suite. After another PR merges into the base, check again before merging this one. Several PRs delivered together get one trial merge of all their heads. **Why**: two PRs that each pass alone can break the base together, and a repository without "require up-to-date branches" will not stop it;
 - the reviewer approved exactly that commit;
 - the repository's own required approvals are present (a code owner, a lead, or whatever the repository defines);
 - no blocker or open question remains.
