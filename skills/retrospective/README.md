@@ -31,6 +31,9 @@ flowchart TD
 - Ask why until you reach the process: a brief, a contract, a skill, a check, a missing number, or a shared premise.
 - A one-off is not a lesson. Keep a lesson that happened twice, or once at a high cost.
 - Prefer structure over text. If a test, a lint, or a template default can stop the mistake, change that and add no sentence.
+- A lesson that came back after a text-only fix proves the text failed. Count the earlier occurrences from the log, then replace the rule with a script or a check.
+- Generic skills stay generic. A lesson the next project would hit goes into the generic skill; this project's names, paths, and sizes stay in the project, and one person's machine facts go to memory.
+- A "Changed:" line in a lesson log is a claim. It counts as done only when the change is in the file.
 - Each lesson goes to the one place that owns it, and shared files change only with the owner's approval, in their own pull request.
 - Check whether the last retrospective's actions helped, then keep, adjust, or revert them.
 
@@ -53,9 +56,12 @@ flowchart TD
 
 ## Tests
 
-These cases have not been run yet, so the skill is at version 0.1.
+The cases run with `claude plugin eval`, which needs a shell sandbox; on a machine without one, run each case's prompt with subagents, once with the skill and once without, and grade with its graders.
 
 | Case | What it checks |
 |---|---|
+| `lesson-log` | From a lead's lesson log: turns a lesson that text failed to fix three times into a script or check, groups recurring harness blocks, catches a false "Changed:" claim, puts generic lead lessons into the generic skill without project facts, sends machine facts to memory, and drops one-offs. |
 | `repeated-fixes` | Finds one shared cause behind three fixes in git history, notes a test that checks nothing, and proposes a structural change. |
 | `round-with-decision-log` | Turns two repeated review findings into structural changes, drops a one-off, and judges the last retro's actions. |
+
+`repeated-fixes` did not separate the skill from a baseline agent in a first run (both found the cause and proposed the test); `lesson-log` is modelled on a real lesson log where the skill did separate.
