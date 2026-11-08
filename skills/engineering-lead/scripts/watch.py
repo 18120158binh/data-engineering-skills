@@ -5,7 +5,8 @@ Run it in the background after every hand-off, so the runtime wakes the main ses
 
 Watch the PR (preferred):
   watch.py pr --cmd "<command printing the PR's head and reviews as JSON>" --head <sha> --seen <n>
-           [--worker <herdr name>]... [--log <lesson log>] [--interval 45] [--timeout 7200]
+           [--acked <sha>] [--worker <herdr name>]... [--log <lesson log>]
+           [--interval 45] [--timeout 7200]
 
   Give --worker once per worker in the loop. In a Herdr pair that hands rounds to itself,
   give both: one of them is always idle while the other works.
@@ -17,7 +18,9 @@ Watch the PR (preferred):
     reviewed  more than <n> reviews, the newest on the current head: a verdict is in.
               Also at start, whatever <n> says, when the newest review already approves the
               current head ("already": true): a watcher restarted after a crash or a memory kill
-              must not treat an approval nobody acted on as seen.
+              must not treat an approval nobody acted on as seen. To wait on a head you
+              already acted on as approved (for CI, the user's go-ahead, or a held merge),
+              pass it as --acked <sha>.
               A review counts as an approval when its "state" or "verdict" is approved or
               approve, or its body contains "Verdict: approve" or "Verdict: approved".
     blocked   a Herdr worker is blocked on a prompt (needs the user)
@@ -27,11 +30,13 @@ Watch the PR (preferred):
               shows idle, so check the screen before acting
     unreadable  the PR command failed 3 times in a row: fix the command or the access
     timeout   nothing happened before --timeout
-    unlogged  (with --log) the lesson log was not written since the last event this watcher
-              reported: write the log line for that event, then watch again
+    unlogged  (with --log) the lesson log has not changed since the last stage this target
+              closed: write its log line, then watch again
 
-  --log makes logging part of the loop: every event except timeout leaves a stamp beside the
-  log (<log>.watched), and the next watcher refuses to start until the log is newer than it.
+  --log makes logging part of the loop. The events that close a stage (reviewed, written,
+  stalled) record the log's size in a stamp beside it, one per watched PR command or result
+  file (<log>.<id>.watched); the next watcher of that target refuses to start until the log's
+  size has changed.
 
 Watch the session (fallback, when the PR tool cannot list reviews):
   watch.py file --path <result file> [--worker <herdr name>]... [--log <lesson log>]
@@ -46,6 +51,7 @@ The script never reads a credential; the PR command does its own authentication.
 
 import argparse
 import json
+import hashlib
 import os
 import re
 import subprocess
@@ -106,21 +112,35 @@ def is_approval(review):
     return bool(re.search(r"verdict:\s*approved?\b", str(review.get("body") or ""), re.I))
 
 
-def stamp_path(log):
-    return log + ".watched"
+STAMPED_EVENTS = ("reviewed", "written", "stalled")
 
 
-def logged_since_last_event(log):
-    stamp = stamp_path(log)
-    if not os.path.exists(stamp):
-        return True
-    return os.path.exists(log) and os.path.getmtime(log) > os.path.getmtime(stamp)
+def log_size(log):
+    return os.path.getsize(log) if os.path.exists(log) else -1
 
 
-def finish(event, detail, code, log=None):
-    if log and event not in ("timeout", "unlogged"):
-        with open(stamp_path(log), "w", encoding="utf-8") as f:
-            f.write(event + "\n")
+class LogGate:
+    """One stamp per watched target, holding the log's size when its last stage closed."""
+
+    def __init__(self, log, target):
+        self.log = log
+        digest = hashlib.sha1(target.encode("utf-8")).hexdigest()[:10]
+        self.stamp = f"{log}.{digest}.watched"
+
+    def logged(self):
+        if not os.path.exists(self.stamp):
+            return True
+        with open(self.stamp, encoding="utf-8") as f:
+            return log_size(self.log) != int(f.read().strip() or -1)
+
+    def close_stage(self):
+        with open(self.stamp, "w", encoding="utf-8") as f:
+            f.write(f"{log_size(self.log)}\n")
+
+
+def finish(event, detail, code, gate=None):
+    if gate and event in STAMPED_EVENTS:
+        gate.close_stage()
     print(json.dumps({"event": event, **detail}))
     sys.exit(code)
 
@@ -134,6 +154,7 @@ def main():
     pr.add_argument("--cmd", required=True)
     pr.add_argument("--head", required=True)
     pr.add_argument("--seen", type=int, required=True)
+    pr.add_argument("--acked")
     f = sub.add_parser("file")
     f.add_argument("--path", required=True)
     for s in (pr, f):
@@ -142,10 +163,11 @@ def main():
         s.add_argument("--interval", type=int, default=45 if s is pr else 15)
         s.add_argument("--timeout", type=int, default=7200)
     args = p.parse_args()
-    log = args.log
-
-    if log and not logged_since_last_event(log):
-        finish("unlogged", {"log": log}, 1)
+    log = None
+    if args.log:
+        log = LogGate(args.log, args.cmd if args.mode == "pr" else args.path)
+        if not log.logged():
+            finish("unlogged", {"log": args.log}, 1)
 
     start = time.time()
     first_read = True
@@ -172,6 +194,7 @@ def main():
                 if (
                     first_read
                     and newest.get("commit") == head
+                    and head != args.acked
                     and is_approval(newest)
                 ):
                     finish("reviewed", {"head": head, "review": newest, "already": True}, 0, log)

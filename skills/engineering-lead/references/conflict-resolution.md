@@ -65,7 +65,7 @@ Record:
 
 ## One issue owner
 
-The main session owns the issue: its decisions, its state, the review loop, merge readiness, and delivery ([worker-contract.md](worker-contract.md#roles)). The coder and the reviewer do bounded assignments. A coder working through `poteto-mode`, a Superpowers method, or subagents of its own does so inside its assignment; it does not become a second owner, and its brief keeps delivery with the main session. Human approvers stay separate from all of them: a code owner who must approve a PR is not met by the reviewer's verdict or by the user's go-ahead.
+The main session owns the issue: its decisions, its state, the review loop, merge readiness, and delivery ([worker-contract.md](worker-contract.md#roles)). The coder and the reviewer do bounded assignments. A coder working through `poteto-mode`, a Superpowers method, or subagents of its own does so inside its assignment; it does not become a second owner, and its brief keeps delivery with the main session, unless the user has let a Herdr pair merge its own PRs ([worker-contract.md](worker-contract.md#in-herdr-the-pair-may-merge-when-the-user-says-so)). Human approvers stay separate from all of them: a code owner who must approve a PR is not met by the reviewer's verdict or by the user's go-ahead.
 
 When the shape of the work changes, for example a bug fix turns out to need a migration, the main session records the change, the reason, and how the assignments change.
 

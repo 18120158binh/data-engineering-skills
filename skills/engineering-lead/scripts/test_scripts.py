@@ -104,7 +104,6 @@ class WatchTest(unittest.TestCase):
 
     def test_the_next_watch_waits_for_a_log_line_after_an_event(self):
         import os
-        import time
         with tempfile.TemporaryDirectory() as d:
             log = os.path.join(d, "retros.md")
             pathlib.Path(log).write_text("start\n", encoding="utf-8")
@@ -114,12 +113,30 @@ class WatchTest(unittest.TestCase):
             self.assertEqual((code, event["event"]), (0, "written"))
             code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
             self.assertEqual((code, event["event"]), (1, "unlogged"))
-            later = time.time() + 5
+            other = os.path.join(d, "other-coder-1.md")
+            pathlib.Path(other).write_text("done\n", encoding="utf-8")
+            code, event = run_watch("file", "--path", other, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"), "another task is not blocked")
             with open(log, "a", encoding="utf-8") as f:
-                f.write("- lesson\n")
-            os.utime(log, (later, later))
+                f.write("- round 1 done\n")
             code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
-            self.assertEqual((code, event["event"]), (0, "written"))
+            self.assertEqual((code, event["event"]), (0, "written"), "a line written in the same second counts")
+
+    def test_a_push_does_not_ask_for_a_log_line(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("start\n", encoding="utf-8")
+            cmd = py_cmd("print('{\\\"head\\\": \\\"b\\\", \\\"reviews\\\": []}')")
+            code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--log", log, "--interval", "0")
+            self.assertEqual(event["event"], "pushed")
+            code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--log", log, "--interval", "0")
+            self.assertEqual(event["event"], "pushed")
+
+    def test_an_acked_approval_lets_the_watcher_wait(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"state\\\": \\\"APPROVED\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--acked", "a", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
 
 
 class WorkersTest(unittest.TestCase):

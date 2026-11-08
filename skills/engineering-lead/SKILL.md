@@ -53,10 +53,10 @@ Go back a step whenever something learned changes an earlier answer, such as a b
 **Never miss a worker finishing: watch the PR.** After every hand-off, start one background watcher with this skill's `scripts/watch.py`, so the runtime wakes you when something happens. Do not wait on screen text or guess from `herdr pane read`.
 
 - **Watch the PR** when the repository's PR tool can print the PR's head and its reviews as JSON (for example a PR script's `reviews <n>` command):
-  `python3 <skill dir>/scripts/watch.py pr --cmd "<that command>" --head <current head sha> --seen <number of reviews now> --worker <worker name> --log <lesson log>`; for a Herdr pair, give `--worker` twice, once for each, since one of them is always idle while the other works. At start it reports an approval already on the current head, whatever `--seen` says, so a watcher restarted after a crash does not sit on an approval nobody acted on
+  `python3 <skill dir>/scripts/watch.py pr --cmd "<that command>" --head <current head sha> --seen <number of reviews now> --worker <worker name> --log <lesson log>`; for a Herdr pair, give `--worker` twice, once for each, since one of them is always idle while the other works. At start it reports an approval already on the current head, whatever `--seen` says, so a watcher restarted after a crash does not sit on an approval nobody acted on. To wait on a head you already acted on as approved (for CI, the user's go-ahead, or a held merge), add `--acked <that sha>`
 - **Watch the session** when it cannot: tell the worker to write its result file as its very last step, then
   `python3 <skill dir>/scripts/watch.py file --path .pm/<task-id>/<role>-<round>.md --worker <worker name> --log <lesson log>`
-- **`--log`** names the repository's lesson log (such as `.pm/retros.md`). After each event, the next watcher refuses to start until the log has been written, so every event gets its log line before the loop goes on. Leave it out only when the task keeps no log
+- **`--log`** names the repository's lesson log (such as `.pm/retros.md`). After an event that closes a stage (`reviewed`, `written`, `stalled`), the next watcher of the same PR or result file refuses to start until the log has changed. The line is a dated round line in the delivery log (`<date> <task> round <n>: <verdict> on <sha>`), plus a lesson with its `Next action` when the round taught one. Leave it out only when the task keeps no log
 
 Run it in the background. When it ends it prints one event; act on it at once, without being asked:
 
@@ -68,7 +68,7 @@ Run it in the background. When it ends it prints one event; act on it at once, w
 | `blocked` | Tell the user what the worker is waiting on |
 | `stalled` | Every worker watched stopped without pushing or reviewing: read the last message of each one listed with `herdr agent read <name> --source recent-unwrapped` and decide |
 | `timeout` | Check the worker's status and the PR, then watch again |
-| `unlogged` | Write the log line for the last event (a delivery line, or a lesson with its `Next action`), then watch again |
+| `unlogged` | Write the round line for the stage that closed (and a lesson, if there is one), then watch again |
 
 Keep one watcher per hand-off. A coder's fix and a reviewer's verdict both show up on the PR, so one PR watcher covers the whole loop.
 
