@@ -1,8 +1,8 @@
 ---
 name: data-migration
-description: Plan, run, and verify a data migration (moving data, schema, stream state, ids, or consumers from an old store or shape to a new one) so that the new path is proven to match the old, every difference is explained, a way back exists until a named point of no return, and the legacy path is actually removed. Covers whether anything needs migrating at all, inventory of every reader and writer, phase order (readers before writers, consumers before producers), rollback and verified backups, backfills, write freezes, row and column reconciliation, stateful stream jobs (savepoints, operator ids, state schema changes), cutover, and decommissioning. Use it when you move to a new store, engine, or schema, rename or re-key data, upgrade a database, change stream job state, backfill history into a new target, or retire a legacy table or job, even if the user only says "move this to X", "rename this column", "switch over", or "can we drop the old one".
+description: Plan, run, and verify a data migration (moving data, schema, stream state, ids, or consumers from an old store or shape to a new one) so that the new path is proven to match the old, every difference is explained, a way back exists until a named point of no return, and the legacy path is actually removed. Covers whether anything needs migrating at all, inventory of every reader and writer, phase order (readers before writers, consumers before producers), rollback and verified backups, backfills, write freezes, row and column reconciliation, stateful stream jobs (savepoints, operator ids, state schema changes), cutover, and decommissioning. Use it when you move to a new store, engine, or schema, rename or re-key data, upgrade a database, change stream job state or a stateful job's graph (even a feature that only adds an operator), backfill history into a new target, or retire a legacy table or job, even if the user only says "move this to X", "rename this column", "switch over", or "can we drop the old one".
 metadata:
-  version: "0.1"
+  version: "0.2"
 ---
 
 # Data migration

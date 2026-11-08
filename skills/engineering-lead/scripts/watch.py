@@ -5,7 +5,7 @@ Run it in the background after every hand-off, so the runtime wakes the main ses
 
 Watch the PR (preferred):
   watch.py pr --cmd "<command printing the PR's head and reviews as JSON>" --head <sha> --seen <n>
-           [--worker <herdr name>]... [--interval 45] [--timeout 7200]
+           [--worker <herdr name>]... [--log <lesson log>] [--interval 45] [--timeout 7200]
 
   Give --worker once per worker in the loop. In a Herdr pair that hands rounds to itself,
   give both: one of them is always idle while the other works.
@@ -14,7 +14,12 @@ Watch the PR (preferred):
   for example `python3 .agents/skills/pull-request/scripts/pr.py reviews 251`.
   Events:
     pushed    the PR head is no longer <sha>: the coder pushed (or anyone did)
-    reviewed  more than <n> reviews, the newest on the current head: a verdict is in
+    reviewed  more than <n> reviews, the newest on the current head: a verdict is in.
+              Also at start, whatever <n> says, when the newest review already approves the
+              current head ("already": true): a watcher restarted after a crash or a memory kill
+              must not treat an approval nobody acted on as seen.
+              A review counts as an approval when its "state" or "verdict" is approved or
+              approve, or its body contains "Verdict: approve" or "Verdict: approved".
     blocked   a Herdr worker is blocked on a prompt (needs the user)
     stalled   every Herdr worker given is done or idle and nothing happened on the PR for 10 minutes:
               read each listed worker's last message (`herdr agent read <name> --source recent-unwrapped`);
@@ -22,20 +27,27 @@ Watch the PR (preferred):
               shows idle, so check the screen before acting
     unreadable  the PR command failed 3 times in a row: fix the command or the access
     timeout   nothing happened before --timeout
+    unlogged  (with --log) the lesson log was not written since the last event this watcher
+              reported: write the log line for that event, then watch again
+
+  --log makes logging part of the loop: every event except timeout leaves a stamp beside the
+  log (<log>.watched), and the next watcher refuses to start until the log is newer than it.
 
 Watch the session (fallback, when the PR tool cannot list reviews):
-  watch.py file --path <result file> [--worker <herdr name>]... [--interval 15] [--timeout 7200]
+  watch.py file --path <result file> [--worker <herdr name>]... [--log <lesson log>]
+           [--interval 15] [--timeout 7200]
 
   Events: written (the result file exists and is not empty), blocked, stalled, timeout.
 
-Exit code 0 for written, pushed, or reviewed; 1 for blocked, stalled, unreadable, or timeout;
-2 on a usage error.
+Exit code 0 for written, pushed, or reviewed; 1 for blocked, stalled, unreadable, unlogged,
+or timeout; 2 on a usage error.
 The script never reads a credential; the PR command does its own authentication.
 """
 
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -87,7 +99,28 @@ def all_quiet(statuses):
     return bool(statuses) and all(s in ("done", "idle") for s in statuses.values())
 
 
-def finish(event, detail, code):
+def is_approval(review):
+    for key in ("state", "verdict"):
+        if str(review.get(key) or "").lower() in ("approved", "approve"):
+            return True
+    return bool(re.search(r"verdict:\s*approved?\b", str(review.get("body") or ""), re.I))
+
+
+def stamp_path(log):
+    return log + ".watched"
+
+
+def logged_since_last_event(log):
+    stamp = stamp_path(log)
+    if not os.path.exists(stamp):
+        return True
+    return os.path.exists(log) and os.path.getmtime(log) > os.path.getmtime(stamp)
+
+
+def finish(event, detail, code, log=None):
+    if log and event not in ("timeout", "unlogged"):
+        with open(stamp_path(log), "w", encoding="utf-8") as f:
+            f.write(event + "\n")
     print(json.dumps({"event": event, **detail}))
     sys.exit(code)
 
@@ -105,11 +138,17 @@ def main():
     f.add_argument("--path", required=True)
     for s in (pr, f):
         s.add_argument("--worker", action="append", default=[])
+        s.add_argument("--log")
         s.add_argument("--interval", type=int, default=45 if s is pr else 15)
         s.add_argument("--timeout", type=int, default=7200)
     args = p.parse_args()
+    log = args.log
+
+    if log and not logged_since_last_event(log):
+        finish("unlogged", {"log": log}, 1)
 
     start = time.time()
+    first_read = True
     quiet_since = None
     failed_reads = 0
     while time.time() - start < args.timeout:
@@ -125,25 +164,33 @@ def main():
             ) as err:
                 failed_reads += 1
                 if failed_reads >= MAX_FAILED_READS:
-                    finish("unreadable", {"error": repr(err)}, 1)
+                    finish("unreadable", {"error": repr(err)}, 1, log)
                 head, reviews = args.head, []
             else:
                 failed_reads = 0
+                newest = reviews[-1] if reviews else {}
+                if (
+                    first_read
+                    and newest.get("commit") == head
+                    and is_approval(newest)
+                ):
+                    finish("reviewed", {"head": head, "review": newest, "already": True}, 0, log)
+                first_read = False
             if head != args.head:
-                finish("pushed", {"head": head, "reviews": len(reviews)}, 0)
+                finish("pushed", {"head": head, "reviews": len(reviews)}, 0, log)
             if len(reviews) > args.seen and reviews[-1].get("commit") == head:
-                finish("reviewed", {"head": head, "review": reviews[-1]}, 0)
+                finish("reviewed", {"head": head, "review": reviews[-1]}, 0, log)
         elif os.path.exists(args.path) and os.path.getsize(args.path) > 0:
-            finish("written", {"path": args.path}, 0)
+            finish("written", {"path": args.path}, 0, log)
 
         statuses = {w: worker_status(w) for w in args.worker}
         blocked = [w for w, s in statuses.items() if s == "blocked"]
         if blocked:
-            finish("blocked", {"worker": blocked[0]}, 1)
+            finish("blocked", {"worker": blocked[0]}, 1, log)
         if all_quiet(statuses):
             quiet_since = quiet_since or time.time()
             if time.time() - quiet_since > STALL_SECONDS:
-                finish("stalled", {"workers": statuses}, 1)
+                finish("stalled", {"workers": statuses}, 1, log)
         else:
             quiet_since = None
         time.sleep(args.interval)

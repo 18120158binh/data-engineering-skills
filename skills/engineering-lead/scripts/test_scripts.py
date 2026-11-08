@@ -87,6 +87,40 @@ class WatchTest(unittest.TestCase):
         code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--interval", "0", "--timeout", "30")
         self.assertEqual((code, event["event"]), (1, "unreadable"))
 
+    def test_an_approval_already_on_the_head_is_reported_at_start(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"state\\\": \\\"APPROVED\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0")
+        self.assertEqual((code, event["event"], event["already"]), (0, "reviewed", True))
+
+    def test_an_approval_of_an_older_head_is_not_reported_at_start(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"old\\\", \\\"body\\\": \\\"Verdict: approve old\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
+
+    def test_changes_requested_already_seen_is_not_reported_again(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"body\\\": \\\"Verdict: changes requested\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
+
+    def test_the_next_watch_waits_for_a_log_line_after_an_event(self):
+        import os
+        import time
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("start\n", encoding="utf-8")
+            result = os.path.join(d, "coder-1.md")
+            pathlib.Path(result).write_text("done\n", encoding="utf-8")
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"))
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (1, "unlogged"))
+            later = time.time() + 5
+            with open(log, "a", encoding="utf-8") as f:
+                f.write("- lesson\n")
+            os.utime(log, (later, later))
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"))
+
 
 class WorkersTest(unittest.TestCase):
     def args(self, **kw):
