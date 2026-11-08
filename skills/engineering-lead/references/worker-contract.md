@@ -46,10 +46,12 @@ A worker does not see the main session's conversation. Each assignment carries:
 - the workspace and branch;
 - the files and areas in scope, and the interfaces it must not change;
 - the constraints: contracts, gates, test policy;
+- for work the user will see (a page, a screen, a report layout), the visual draft the user approved, by path: a clickable mockup with real copy and its states (empty, loading, error). A UI task with no approved draft does not start; get one approved first. **Why**: a user who approves a written design approves words, not a screen, and the mismatch surfaces only once the screen is live;
 - the checks it must run, by command. Fixtures that stand in for an external system's response (an API, a metrics query, a provider) are recorded real responses or the provider's documented examples. **Why**: a fixture written from the code's own assumption passes while the real call never matches. A new step that runs against live infrastructure (a bootstrap or node script, a migration, a permission grant) also gets a safe live run before delivery: read-only, idempotent, or a stub test the coder runs. **Why**: a step that was only read in review can still fail on its first live run, for a reason no reader sees, such as a missing permission;
 - the cross-cutting rules every change in this area must keep, each with the test that checks it (for example: every page checks the session itself, with a no-session test). When a review finds a new one, add it to the brief of every coder working in that area, not only the one whose PR it was found on. **Why**: a rule that lives only in reviews is learned again by each coder, one finding at a time;
 - the side effects: every write outside the task branch the work needs (cloud, cluster, secret store, Git remote, merge, delete), and for each who performs it: the worker, the main session, or the user. A write the worker's harness may block (applying infrastructure, writing a secret, a remote shell write, deleting branches) is planned from the start as a user step, with a ready script. Before an approved live operation, list every write it needs and get each permission in place before the first step. **Why**: the user's approval in the main session's chat does not reach a worker's session, and a blocked write discovered halfway leaves the system half changed;
-- the boundary: commit on the task branch, push it, and open the PR (or update it on a rework round) with the repository's PR tool; no merge, approval, or deploy; never credentials. If the push or PR fails for missing access, stop and report it, without workarounds. If the repository has no remote or PR process, commit locally and report the commit;
+- before each hand-off to review: merge the base's current tip into the task branch, rerun the checks, push, and hand off right after the push, without waiting for CI. **Why**: an approval given to a head that is behind the base is spent on the next base merge, and a reviewer waiting on CI sits idle for the whole run;
+- the boundary: commit on the task branch, push it, and open the PR (or update it on a rework round) with the repository's PR tool; no merge, approval, or deploy (unless the user has let the pair merge, [below](#in-herdr-the-pair-may-merge-when-the-user-says-so)); never credentials. If the push or PR fails for missing access, stop and report it, without workarounds. If the repository has no remote or PR process, commit locally and report the commit;
 - when to stop and report instead of guessing: an unresolved design decision, a silent contract, a missing dependency, a permission boundary, anything out of scope;
 - how to return the result: as its final message for a native subagent, or written to `.pm/<task-id>/coder-<round>.md` for a Herdr worker ([runtime-adapters.md](runtime-adapters.md#result-files)), with the contents listed below;
 - to keep every file it creates (notes, scratch checkouts, logs) inside the task's workspace; a separate checkout, if it needs one, goes under `.pm/<task-id>/`, never in `/tmp`;
@@ -93,6 +95,8 @@ The reviewer gets the material to judge for itself, not the coder's summary:
 - the repository rules and conventions that apply;
 - the PR to review (number or URL) and its head commit SHA; without a PR process, the local commit and its base;
 - the coder's verification evidence, as a claim to check;
+- for work the user will see, the approved visual draft, which the reviewer checks the result against;
+- when to post: as soon as the review is done, without waiting for CI. CI is a merge gate, not a review gate: a merge needs the approval and green CI on the same head;
 - the method to follow, by path: the repository's review skill, or pstack `interrogate`; in a Herdr session the brief is sent as `/poteto-mode <review brief>`, as for the coder. Superpowers `requesting-code-review` is the fallback where pstack is not installed;
 - the boundary: read and run checks only, in its own checkout; never in the coder's folder; no edits to implementation files, no push or merge; post the review on the PR with the repository's PR tool, with the verdict and the head SHA it applies to, and, where the tool can set labels, set `review: approved` or `review: changes requested` on the PR and remove the other. **Why**: a label shows the state of every open PR at a glance, to a watcher and to a person;
 - its inputs inside its own checkout, copied there as for the coder;
@@ -122,11 +126,23 @@ With native subagents, the main session relays each round:
 
 In Herdr, the coder and the reviewer hand each round to each other; the main session does not relay. Before starting the pair, the main session copies `scripts/workers.py` into each worker's `.pm/inputs/`, and each brief carries both workers' names, the PR, and how to hand off: write the message to a file in your own workspace and send it with `python3 .pm/inputs/workers.py send <peer> --brief-file <file>`. Where the worker's harness asks permission for that command, allowing it is a user step, listed with the brief's side effects and done before the pair starts.
 
-- The coder, after each push: sends the reviewer the PR, the new head SHA, and its evidence (the checks it ran and their results), inline in the message.
+- The coder, right after each push (with the base's tip merged in, and without waiting for CI): sends the reviewer the PR, the new head SHA, and its evidence (the checks it ran and their results), inline in the message.
 - The reviewer, after each review: posts it on the PR with the verdict and the label, then sends the coder the review's link and every required finding still open from any round. A finding that needs the user's judgment, or one it would drop, it marks as such on the PR and does not send to the coder; the main session takes it from there.
-- The main session: starts the pair, watches the PR for a verdict on the current head, counts the rounds, steps in after two failed rounds on the same finding, and checks the approved commit itself at merge readiness. It closes both after the merge.
+- The main session: starts the pair, watches the PR for a verdict on the current head, counts the rounds, steps in after two failed rounds on the same finding, and checks the approved commit itself at merge readiness. It closes both after the merge. When the user lets the pair merge, the next section replaces this bullet.
 
 **Why**: when the main session relayed every hand-off, each round gained a hop and a delay, and findings were lost in the retelling. With native subagents, which cannot reach each other, the main session still relays as in the steps above.
+
+### In Herdr: the pair may merge, when the user says so
+
+By default the main session merges. When the user explicitly lets the pairs merge their own PRs (for a task, or for a run of tasks), the pair takes over merge readiness and closing, and the main session only starts pairs, watches, keeps the merge order, and handles what they send it. The briefs replace the coder's no-merge boundary and the main session's bullet above with:
+
+- The coder merges once the reviewer's approval names the current head, CI is green on that head, the head contains the base's current tip (otherwise it merges the base, pushes, and gets a review of the new head), and every other item of [merge readiness](#merge-readiness) holds. It merges with the provider's head guard (for GitHub, `gh pr merge --match-head-commit <sha>`), then checks what the merge set off: the deploy, the jobs, the migrations, whatever the brief names.
+- After a healthy merge it appends one line to the lesson log, and the pair closes itself: the reviewer first, the coder last.
+- Anything unhealthy (a failed check, a deploy that does not settle, a merge refused) goes to the main session, and the pair stays open.
+- A PR the user or the main session marked as held is never merged by the pair.
+- When other PRs are approved or in review, the coder asks the main session before merging. The main session keeps the merge order across pairs, as in [merge readiness](#merge-readiness), because a pair sees only its own PR.
+
+**Why**: with one merge point, approved PRs waited on the main session's attention, and on its watcher when the watcher was down. The user's go-ahead is still what makes a merge allowed; this moves who carries it out, not who decides.
 
 A verdict holds only for the SHA it names. Any change to the code after a review, however small, needs a new review of the new SHA. Never carry an approval forward.
 
@@ -140,6 +156,7 @@ The main session declares a task merge-ready only when all of these hold, with e
 - the checks the change needs pass on that commit, run by the main session or confirmed from CI for that SHA; evidence from an earlier commit does not count;
 - the required CI checks pass;
 - the checks pass on the head merged with the base's current tip: the provider's merge ref when it runs checks there, otherwise a trial merge the main session or the reviewer runs with the full suite. After another PR merges into the base, check again before merging this one. Several PRs delivered together get one trial merge of all their heads. **Why**: two PRs that each pass alone can break the base together, and a repository without "require up-to-date branches" will not stop it;
+- with several PRs approved or in review at once, merge them in the order they were approved; before merging one, trial-merge each other open PR onto the result, and hold the merge when it would push another into conflict, unless the other can rebase cheaply. **Why**: a merge order chosen by attention pushed an approved PR into conflict twice, each time costing a merge round and a fresh review;
 - the reviewer approved exactly that commit;
 - the repository's own required approvals are present (a code owner, a lead, or whatever the repository defines);
 - no blocker or open question remains.

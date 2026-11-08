@@ -2,7 +2,7 @@
 name: pipeline-review
 description: Check a data pipeline, Airflow DAG, stream job, CDC flow, or ops job against the principles that keep it correct under retries, reruns, replays, backfills, late data, partial failure, and on-call. Lists every side effect, walks each through rules for cursors and checkpoints, idempotent writes, backfill and late data, partial failure, concurrency and limits, alerting, data quality, retention, secrets, and human gates, then proves the one fact the pipeline's safety rests on by running code. Use it when you build, change, or review a pipeline, before a merge or a first deploy, after an incident, or when someone asks "is this safe to rerun", "what happens if it fails halfway", "will this double count", or "why did nobody get alerted".
 metadata:
-  version: "0.1"
+  version: "0.2"
 ---
 
 # Pipeline review

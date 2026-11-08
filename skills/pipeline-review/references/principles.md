@@ -74,9 +74,11 @@ Table design is owned by the `data-modeling` skill: natural keys, one writer per
 **A stateful stream job moves state across versions on purpose.**
 - Stop with a savepoint, and start the new version from it.
 - Ask a person before any start without one.
-- Give every stateful operator a fixed id, pinned by a test.
-- **Why**: generated operator ids change with the graph, and a start that drops them forgets all state.
-- **Test**: does the rollout plan name the savepoint? Does a test assert every operator id?
+- Give every stateful operator a fixed id, pinned by a test that walks the job graph.
+- Any change to the job graph, including a feature that only adds an operator, is a state change: before merge, restore a savepoint written by the version now deployed into the new build.
+- After the rollout, check every job, not only the one you changed, and fail loudly when one does not reach a stable running state.
+- **Why**: generated operator ids change with the graph, and a start that drops them forgets all state. A PR that says "existing ids unchanged" passes review and CI while one operator without a fixed id gets a new generated id; only a restore of the previous version's real savepoint shows it, and without one the job crash-loops on deploy.
+- **Test**: does the rollout plan name the savepoint? Does a test assert every operator id? Does CI or a pre-merge step restore the deployed version's savepoint into the new build?
 
 **CDC replication slots are kept, watched, and cleaned up.**
 - Keep slots across stops, and delay the position they confirm by enough checkpoints that a rollback can re-read.

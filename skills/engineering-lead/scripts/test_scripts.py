@@ -87,6 +87,57 @@ class WatchTest(unittest.TestCase):
         code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--interval", "0", "--timeout", "30")
         self.assertEqual((code, event["event"]), (1, "unreadable"))
 
+    def test_an_approval_already_on_the_head_is_reported_at_start(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"state\\\": \\\"APPROVED\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0")
+        self.assertEqual((code, event["event"], event["already"]), (0, "reviewed", True))
+
+    def test_an_approval_of_an_older_head_is_not_reported_at_start(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"old\\\", \\\"body\\\": \\\"Verdict: approve old\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
+
+    def test_changes_requested_already_seen_is_not_reported_again(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"body\\\": \\\"Verdict: changes requested\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
+
+    def test_the_next_watch_waits_for_a_log_line_after_an_event(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("start\n", encoding="utf-8")
+            result = os.path.join(d, "coder-1.md")
+            pathlib.Path(result).write_text("done\n", encoding="utf-8")
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"))
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (1, "unlogged"))
+            other = os.path.join(d, "other-coder-1.md")
+            pathlib.Path(other).write_text("done\n", encoding="utf-8")
+            code, event = run_watch("file", "--path", other, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"), "another task is not blocked")
+            with open(log, "a", encoding="utf-8") as f:
+                f.write("- round 1 done\n")
+            code, event = run_watch("file", "--path", result, "--log", log, "--interval", "0")
+            self.assertEqual((code, event["event"]), (0, "written"), "a line written in the same second counts")
+
+    def test_a_push_does_not_ask_for_a_log_line(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("start\n", encoding="utf-8")
+            cmd = py_cmd("print('{\\\"head\\\": \\\"b\\\", \\\"reviews\\\": []}')")
+            code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--log", log, "--interval", "0")
+            self.assertEqual(event["event"], "pushed")
+            code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "0", "--log", log, "--interval", "0")
+            self.assertEqual(event["event"], "pushed")
+
+    def test_an_acked_approval_lets_the_watcher_wait(self):
+        cmd = py_cmd("print('{\\\"head\\\": \\\"a\\\", \\\"reviews\\\": [{\\\"commit\\\": \\\"a\\\", \\\"state\\\": \\\"APPROVED\\\"}]}')")
+        code, event = run_watch("pr", "--cmd", cmd, "--head", "a", "--seen", "1", "--acked", "a", "--interval", "0", "--timeout", "1")
+        self.assertEqual((code, event["event"]), (1, "timeout"))
+
 
 class WorkersTest(unittest.TestCase):
     def args(self, **kw):
