@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: lesson-log
+expected_outcome: |
+  retro.md treats the path-quoting lessons (6, 14, 20) as one lesson that text failed to fix three times and proposes a script or check; groups the permission blocks (9, 13, 17, 22); proposes no new rule for 4 and 12, which #47 fixed in structure (or says the claim cannot be verified here); sends the Flink facts (5, 11) to the project; finds that lesson 1's "Changed" claim is false; puts the owner's one-pair rule (21), the dropped-findings brief (8), the cross-cutting rule in the brief (15), the trial merge (16), and real fixtures (18) into the generic engineering-lead skill without project facts; sends the worker cap (10) and the UTC+7 laptop (23) to memory or a setting; drops the one-offs (2, 3, 19); and leaves every change for the owner's approval.
+context:
+  scaffold_script: place-files.sh
