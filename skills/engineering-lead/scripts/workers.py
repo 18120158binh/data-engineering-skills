@@ -37,6 +37,7 @@ import sys
 import time
 
 ENV = {**os.environ, "MSYS_NO_PATHCONV": "1", "MSYS2_ARG_CONV_EXCL": "*"}
+PROMPT_MARK = "❯"
 
 
 def herdr(*args, timeout=60):
@@ -80,16 +81,36 @@ def live_agents():
     return agents
 
 
-def status(name):
+def state(name):
     data = parse(herdr("agent", "get", name))
     agent = data.get("agent") if isinstance(data.get("agent"), dict) else data
-    return agent.get("agent_status")
+    return agent.get("agent_status"), agent.get("state_change_seq")
+
+
+def status(name):
+    return state(name)[0]
 
 
 def unsubmitted(name, brief):
-    """True when the brief's start sits on the input-box line, not just in the transcript above it."""
-    lines = [line for line in screen(name, 12).splitlines() if ">" in line]
+    """True when the brief's start sits on Claude's input line (the last line with its prompt mark)."""
+    lines = [line for line in screen(name, 12).splitlines() if PROMPT_MARK in line]
     return bool(lines) and brief.splitlines()[0][:30] in lines[-1]
+
+
+def wait_started(name, before_seq, seconds):
+    """Wait until the worker works, blocks, or finishes a turn that began after before_seq.
+
+    A worker kept across rounds sits in "done" between them, so "done" alone does not
+    show that this prompt was taken.
+    """
+    end = time.time() + seconds
+    while True:
+        current, seq = state(name)
+        if current in ("working", "blocked") or (current == "done" and seq != before_seq):
+            return current, True
+        if time.time() >= end:
+            return current, False
+        time.sleep(2)
 
 
 def screen(name, lines=15):
@@ -147,17 +168,17 @@ def send(args):
     if not brief:
         finish("refused", 2, reason="the brief file is empty", path=args.brief_file)
     text = f"/{args.slash} {brief}" if args.slash else brief
+    before_seq = state(args.worker)[1]
     herdr("agent", "prompt", args.worker, text, timeout=120)
     if args.slash:
         herdr("agent", "send-keys", args.worker, "Enter")
-    started = ("working", "blocked", "done")
-    current = wait_for(args.worker, started, args.settle)
-    if current not in started and unsubmitted(args.worker, brief):
+    current, took = wait_started(args.worker, before_seq, args.settle)
+    if not took and unsubmitted(args.worker, brief):
         herdr("agent", "send-keys", args.worker, "Enter")
-        current = wait_for(args.worker, started, args.settle)
-    if current in ("working", "done"):
+        current, took = wait_started(args.worker, before_seq, args.settle)
+    if took and current in ("working", "done"):
         finish("working", 0, worker=args.worker, status=current)
-    if current == "blocked":
+    if took and current == "blocked":
         finish("blocked", 1, worker=args.worker, screen=screen(args.worker))
     finish("not_started", 1, worker=args.worker, status=current, screen=screen(args.worker))
 

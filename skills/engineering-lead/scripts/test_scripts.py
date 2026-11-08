@@ -40,7 +40,8 @@ class FakeHerdr:
         self.calls.append(args)
         if args[:2] == ("agent", "get"):
             current = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
-            return json.dumps({"result": {"agent": {"agent_status": current}}})
+            current, seq = current if isinstance(current, tuple) else (current, 1)
+            return json.dumps({"result": {"agent": {"agent_status": current, "state_change_seq": seq}}})
         if args[:2] == ("agent", "list"):
             return json.dumps({"result": {"agents": self.agents}})
         if args[:2] == ("agent", "read"):
@@ -134,8 +135,9 @@ class WorkersTest(unittest.TestCase):
         self.assertIn(("agent", "prompt", "t1-coder", "/poteto-mode " + brief), fake.calls)
         self.assertEqual((code, event["event"]), (0, "working"))
 
-    def send_with(self, fake, brief, statuses):
-        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", fake),                 mock.patch.object(workers, "wait_for", side_effect=statuses):
+    def send_with(self, fake, brief, started):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(workers, "herdr", fake), \
+                mock.patch.object(workers, "wait_started", side_effect=started):
             f = pathlib.Path(d) / "brief.md"
             f.write_text(brief, encoding="utf-8")
             return call(workers.send, self.args(worker="t1-coder", brief_file=str(f), slash="poteto-mode", settle=1))
@@ -143,20 +145,37 @@ class WorkersTest(unittest.TestCase):
     def enters(self, fake):
         return sum(1 for c in fake.calls if c[:2] == ("agent", "send-keys"))
 
+    @staticmethod
+    def claude_screen(transcript, input_line):
+        rule = "\u2500" * 40
+        return f"{transcript}\n\n{rule}\n\u276f {input_line}\n{rule}\n  auto mode on"
+
     def test_a_brief_left_in_the_input_box_gets_one_more_enter(self):
-        fake = FakeHerdr(screen_text="Earlier output\n\u2502 > /poteto-mode Fix the retry that doubles rows")
-        code, event = self.send_with(fake, "Fix the retry that doubles rows", ["idle", "working"])
+        fake = FakeHerdr(statuses=[("done", 7)], screen_text=self.claude_screen("Earlier output", "/poteto-mode Fix the retry that doubles rows"))
+        code, event = self.send_with(fake, "Fix the retry that doubles rows", [("done", False), ("working", True)])
         self.assertEqual((self.enters(fake), event["event"]), (2, "working"))
 
     def test_a_brief_only_in_the_transcript_gets_no_extra_enter(self):
-        fake = FakeHerdr(screen_text="> /poteto-mode Fix the retry that doubles rows\nWorking on it...\n\u2502 > ")
-        code, event = self.send_with(fake, "Fix the retry that doubles rows", ["idle"])
+        screen_text = self.claude_screen("\u276f /poteto-mode Fix the retry that doubles rows\nWorking on it...", "")
+        fake = FakeHerdr(statuses=[("done", 7)], screen_text=screen_text)
+        code, event = self.send_with(fake, "Fix the retry that doubles rows", [("done", False)])
         self.assertEqual((self.enters(fake), code, event["event"]), (1, 1, "not_started"))
 
-    def test_a_worker_that_already_finished_counts_as_started(self):
-        fake = FakeHerdr(screen_text="\u2502 > /poteto-mode Fix the retry")
-        code, event = self.send_with(fake, "Fix the retry", ["done"])
+    def test_a_turn_finished_after_the_send_counts_as_started(self):
+        fake = FakeHerdr(statuses=[("done", 7)])
+        code, event = self.send_with(fake, "Fix the retry", [("done", True)])
         self.assertEqual((self.enters(fake), code, event["event"]), (1, 0, "working"))
+
+    def test_done_from_the_previous_round_is_not_taken_as_started(self):
+        fake = FakeHerdr(statuses=[("done", 7)])
+        with mock.patch.object(workers, "herdr", fake), mock.patch.object(workers.time, "sleep"), \
+                mock.patch.object(workers.time, "time", side_effect=[0, 0, 100]):
+            self.assertEqual(workers.wait_started("t1-coder", 7, 1), ("done", False))
+
+    def test_done_after_a_new_state_change_is_taken_as_started(self):
+        fake = FakeHerdr(statuses=[("done", 8)])
+        with mock.patch.object(workers, "herdr", fake):
+            self.assertEqual(workers.wait_started("t1-coder", 7, 1), ("done", True))
 
     def test_an_empty_brief_is_refused_before_anything_is_sent(self):
         fake = FakeHerdr()
