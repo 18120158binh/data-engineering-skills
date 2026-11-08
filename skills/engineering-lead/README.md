@@ -42,7 +42,7 @@ Integration is an optional step the main session calls when asked, with its own 
 - The main session owns only the workers it started, by the identity it recorded. It never touches other sessions, even ones called `coder` or `reviewer`, and it never answers a trust or permission prompt for the user.
 - The task state is the main session's alone. Workers write their own result files. Status questions are answered from the state without restarting, and a new session resumes after checking the state against reality.
 - Results and delivery are reported separately, step by step: implemented, verified, pushed, PR opened, reviewed, approved, merged, deployed.
-- Retrospectives may propose changes to skills or instructions; nothing shared changes without approval.
+- Lessons are logged as they happen, each with the place its fix belongs and whether it landed; a lesson that repeats after a text-only fix gets a script or a check. The `retrospective` skill routes the open ones. Retrospectives may propose changes to skills or instructions; nothing shared changes without approval.
 
 ## Files
 
