@@ -34,6 +34,16 @@ gh pr view <number> --comments
 - Choices marked "pending owner review" that are still pending.
 - A decision log, if the work kept one (for example a table of time, phase, decision, why, evidence, result). Rows whose result says superseded, reverted, or overturned are the richest.
 
+## A lesson log
+
+Some work keeps a running log of lessons as they happen, such as `retros.md`, often with what happened, its cost, the lesson, and what changed. It is the richest source when it exists, and the least checked.
+
+- Read every entry, including ones buried in a dated delivery log rather than a numbered list.
+- Group entries by symptom, not by wording. "Lesson 40 repeated" and a later entry about the same quoting bug under a new number are one lesson.
+- For each "Changed:" or "fixed in" claim, open the file or commit it names. Count it as done only when the change is there.
+- Entries that already end with `Next action: ... / open` are lessons a past retrospective routed and nobody applied. Ask why before routing them again.
+- The log records the lead's view. A worker's result files, reviews, and the task state can contradict it.
+
 ## Incidents and known issues
 
 - The incident timeline: when it started, when someone noticed, and how. The gap between the two often matters more than the cause.
