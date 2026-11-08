@@ -92,9 +92,15 @@ def status(name):
 
 
 def unsubmitted(name, brief):
-    """True when the brief's start sits on Claude's input line (the last line with its prompt mark)."""
+    """True when the brief sits on Claude's input line (the last line with its prompt mark).
+
+    A long brief shows there as "[Pasted text #1 +N lines]". Any other text there may be
+    Claude's own greyed suggestion, which an Enter would submit, so it does not count.
+    """
     lines = [line for line in screen(name, 12).splitlines() if PROMPT_MARK in line]
-    return bool(lines) and brief.splitlines()[0][:30] in lines[-1]
+    if not lines:
+        return False
+    return brief.splitlines()[0][:30] in lines[-1] or "[Pasted text" in lines[-1]
 
 
 def wait_started(name, before_seq, seconds):
@@ -169,6 +175,10 @@ def send(args):
         finish("refused", 2, reason="the brief file is empty", path=args.brief_file)
     text = f"/{args.slash} {brief}" if args.slash else brief
     before_seq = state(args.worker)[1]
+    if before_seq is None:
+        before_seq = state(args.worker)[1]
+    if before_seq is None:
+        finish("failed", 1, step="agent get", reason="herdr gave no state_change_seq, so a new turn cannot be told from the last one")
     herdr("agent", "prompt", args.worker, text, timeout=120)
     if args.slash:
         herdr("agent", "send-keys", args.worker, "Enter")

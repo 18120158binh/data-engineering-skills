@@ -161,6 +161,22 @@ class WorkersTest(unittest.TestCase):
         code, event = self.send_with(fake, "Fix the retry that doubles rows", [("done", False)])
         self.assertEqual((self.enters(fake), code, event["event"]), (1, 1, "not_started"))
 
+    def test_a_long_brief_shown_as_pasted_text_gets_one_more_enter(self):
+        fake = FakeHerdr(statuses=[("done", 7)], screen_text=self.claude_screen("", "[Pasted text #1 +40 lines]"))
+        code, event = self.send_with(fake, "Fix the retry\nthen run the suite", [("done", False), ("working", True)])
+        self.assertEqual((self.enters(fake), event["event"]), (2, "working"))
+
+    def test_a_suggestion_in_the_input_box_gets_no_enter(self):
+        fake = FakeHerdr(statuses=[("done", 7)], screen_text=self.claude_screen("", "run the tests again"))
+        code, event = self.send_with(fake, "Fix the retry", [("done", False)])
+        self.assertEqual((self.enters(fake), event["event"]), (1, "not_started"))
+
+    def test_a_missing_state_counter_stops_before_sending(self):
+        fake = FakeHerdr(statuses=[("done", None)])
+        code, event = self.send_with(fake, "Fix the retry", [])
+        self.assertEqual((code, event["event"]), (1, "failed"))
+        self.assertNotIn("prompt", [c[1] for c in fake.calls if len(c) > 1])
+
     def test_a_turn_finished_after_the_send_counts_as_started(self):
         fake = FakeHerdr(statuses=[("done", 7)])
         code, event = self.send_with(fake, "Fix the retry", [("done", True)])
