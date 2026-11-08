@@ -43,6 +43,8 @@ Do not repeat the whole discovery. At the start of each run:
 
 Rediscover the areas that changed before choosing a workflow or a capability: a new skill goes into the capability list, a changed rule replaces the old one. When much has changed, or the baseline no longer fits what you see, redo the affected parts of the first-time discovery.
 
+When the work is delivered to a long-lived branch other than the mainline, such as an environment branch, record on the first day how its changes reach the mainline (a promotion PR, and when), and put that in the plan. **Why**: an environment branch that took every PR for a week ended 98 commits ahead of the mainline, with no planned way back.
+
 Git state also feeds a separate decision: whether to isolate the work in a branch or worktree. The main session decides it from the project's rules ([runtime-adapters.md](runtime-adapters.md#workspace-for-the-task)); it is execution setup, not discovery. A read-only question needs no isolation, work that continues an existing branch stays on it, and some projects forbid worktrees.
 
 ### Task-specific investigation belongs to the worker

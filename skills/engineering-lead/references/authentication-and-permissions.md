@@ -115,6 +115,8 @@ A subagent, a worker in another environment, a container, or a remote session re
 - the project rules and gates that apply;
 - the evidence it must return.
 
+The user's approval given to the main session does not carry into a worker's session: the worker's harness decides on its own permission rules, and it may block a write the user approved in chat. Plan such writes as user steps, or get the permission in place before the work starts ([worker-contract.md](worker-contract.md#the-coder-brief), the side effects in the brief).
+
 It never carries keys, tokens, passwords, credential files, or secret-bearing environment values. The parent still coordinates the work package, reconciles what the worker reports against the provider's state, and reports the final delivery.
 
 ## When something fails

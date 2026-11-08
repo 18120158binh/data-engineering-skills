@@ -59,6 +59,8 @@ Integration is an optional step the main session calls when asked, with its own 
 | [references/integration-playbook.md](references/integration-playbook.md) | Optional integration: audit, design, implement, verify, evaluate with UC1 to UC5 per runtime and A1 to A12, hand back. |
 | [references/integration-contract.md](references/integration-contract.md) | Optional integration: ownership, modification boundaries, completion criteria, scenario statuses, the delivery boundary, and the hand-back. |
 | [scripts/watch.py](scripts/watch.py) | The background watcher the main session starts after every hand-off: it waits for the PR's head to change or a new review on it (through the repository's PR tool), or for a worker's result file, and reports blocked or stalled workers. |
+| [scripts/workers.py](scripts/workers.py) | Starts, briefs, and lists the main session's Herdr workers with no shell in between: refuses the home folder, a non-repository, and starting past the machine's cap, reads each brief from a file, and confirms a slash prompt was submitted. |
+| [scripts/test_scripts.py](scripts/test_scripts.py) | Tests for both scripts: `python -m unittest discover -s skills/engineering-lead/scripts -p "test_*.py"`. |
 | [references/sources.md](references/sources.md) | Credits for superpowers, pstack, and rea. |
 
 ## Tests
