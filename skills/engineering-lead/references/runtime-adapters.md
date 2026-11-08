@@ -44,7 +44,7 @@ Use [`scripts/workers.py`](../scripts/workers.py) for spawn and send. It calls H
 | read | `herdr agent read <name> --source recent-unwrapped --lines <n>`, plus `herdr agent get <name>` for the status. The read includes screen chrome and Claude's own input suggestions, so use it only for short replies. A full result goes in a result file ([below](#result-files)) |
 | close | `herdr pane close <pane id>` ends the pane and the agent in it |
 
-The number of live workers is bounded by the machine (memory, CPU), not by the plan. Keep the owner's cap in their memory or the repository's settings and pass it as `--max`; a harness short of memory kills background processes such as the main session's watcher first.
+The number of live workers is bounded by the machine (memory, CPU), not by the plan. Idle workers still hold their memory, so they count toward the cap; when memory runs low, close the pairs of approved or merged PRs first. Keep the owner's cap in their memory or the repository's settings and pass it as `--max`; a harness short of memory kills background processes such as the main session's watcher first.
 
 Things that stop a Herdr worker:
 

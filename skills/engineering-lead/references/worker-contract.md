@@ -52,7 +52,8 @@ A worker does not see the main session's conversation. Each assignment carries:
 - the boundary: commit on the task branch, push it, and open the PR (or update it on a rework round) with the repository's PR tool; no merge, approval, or deploy; never credentials. If the push or PR fails for missing access, stop and report it, without workarounds. If the repository has no remote or PR process, commit locally and report the commit;
 - when to stop and report instead of guessing: an unresolved design decision, a silent contract, a missing dependency, a permission boundary, anything out of scope;
 - how to return the result: as its final message for a native subagent, or written to `.pm/<task-id>/coder-<round>.md` for a Herdr worker ([runtime-adapters.md](runtime-adapters.md#result-files)), with the contents listed below;
-- to keep every file it creates (notes, scratch checkouts, logs) inside the task's workspace; a separate checkout, if it needs one, goes under `.pm/<task-id>/`, never in `/tmp`.
+- to keep every file it creates (notes, scratch checkouts, logs) inside the task's workspace; a separate checkout, if it needs one, goes under `.pm/<task-id>/`, never in `/tmp`;
+- its inputs inside its own workspace: copy every file the worker needs (the plan, earlier reviews, logs) into its worktree, such as `.pm/inputs/`, and point the brief there, never at a path outside its working directory. **Why**: a worker that reads outside its folder stops on a permission prompt, and answering a worker's permission prompt is the user's call, never the main session's.
 
 For a rework round, the brief points the coder at every review on the PR, not only the latest, and lists every required finding still open from any round, each with the round it was raised in and what must not regress. The coder answers each finding by id. **Why**: a fix brief built from the latest review alone dropped two required findings from round 1, and only the reviewer noticed. The same coder and reviewer stay on the task across all rounds ([runtime-adapters.md](runtime-adapters.md)), so the brief can name the reviews instead of retelling them.
 
@@ -93,7 +94,8 @@ The reviewer gets the material to judge for itself, not the coder's summary:
 - the PR to review (number or URL) and its head commit SHA; without a PR process, the local commit and its base;
 - the coder's verification evidence, as a claim to check;
 - the method to follow, by path: the repository's review skill, or pstack `interrogate`; in a Herdr session the brief is sent as `/poteto-mode <review brief>`, as for the coder. Superpowers `requesting-code-review` is the fallback where pstack is not installed;
-- the boundary: read and run checks only, in its own checkout; never in the coder's folder; no edits to implementation files, no push or merge; post the review on the PR with the repository's PR tool, with the verdict and the head SHA it applies to;
+- the boundary: read and run checks only, in its own checkout; never in the coder's folder; no edits to implementation files, no push or merge; post the review on the PR with the repository's PR tool, with the verdict and the head SHA it applies to, and, where the tool can set labels, set `review: approved` or `review: changes requested` on the PR and remove the other. **Why**: a label shows the state of every open PR at a glance, to a watcher and to a person;
+- its inputs inside its own checkout, copied there as for the coder;
 - how to return the result: as its final message (native), or in `.pm/<task-id>/reviewer-<round>.md` (Herdr);
 - to keep every file it creates inside the task's workspace; to check out the commit separately, use `git worktree add .pm/<task-id>/review-<round> <sha>` and remove it afterwards, never a path in `/tmp`.
 
@@ -113,6 +115,16 @@ The reviewer checks correctness, the acceptance criteria, regression risk, the r
 3. The main session checks the new result as above.
 4. The reviewer reviews the PR again at its new head commit.
 5. Repeat until the verdict is approved, or a blocker needs the user.
+
+### In Herdr: the pair talks directly
+
+In Herdr, the coder and the reviewer hand each round to each other; the main session does not relay. Both briefs carry both workers' names, the PR, and how to hand off: write the message to a file in your own workspace and send it with `python3 <skill dir>/scripts/workers.py send <peer> --brief-file <file>`.
+
+- The coder, after each push: sends the reviewer the PR and the new head SHA.
+- The reviewer, after each review: posts it on the PR with the verdict and the label, then sends the coder the review's link and every required finding still open from any round.
+- The main session: starts the pair, watches the PR for a verdict on the current head, counts the rounds, steps in after two failed rounds on the same finding, and checks the approved commit itself at merge readiness. It closes both after the merge.
+
+**Why**: when the main session relayed every hand-off, each round gained a hop and a delay, and findings were lost in the retelling. With native subagents, which cannot reach each other, the main session still relays as in the steps above.
 
 A verdict holds only for the SHA it names. Any change to the code after a review, however small, needs a new review of the new SHA. Never carry an approval forward.
 
