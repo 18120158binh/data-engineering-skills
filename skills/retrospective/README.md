@@ -62,7 +62,7 @@ The cases run with `claude plugin eval`, which needs a shell sandbox; on a machi
 
 | Case | What it checks |
 |---|---|
-| `incident-lesson` | From symptom-first incident notes: writes a lesson that explains the replication slot and the WAL cap before the error, keeps the six parts in order, gives numbers in the result without inventing any, and ends with a generic takeaway. |
+| `incident-lesson` | From symptom-first incident notes: writes a lesson that explains the replication slot and the WAL cap before the error, keeps the six parts in order, quotes the exact error, says why the alert missed it, gives the downtime, the no-loss evidence, and the measured peak without inventing numbers, and ends with a generic takeaway. |
 | `lesson-log` | From a lead's lesson log: turns a lesson that text failed to fix three times into a script or check, groups recurring harness blocks, catches a false "Changed:" claim, puts generic lead lessons into the generic skill without project facts, sends machine facts to memory, and drops one-offs. |
 | `repeated-fixes` | Finds one shared cause behind three fixes in git history, notes a test that checks nothing, and proposes a structural change. |
 | `round-with-decision-log` | Turns two repeated review findings into structural changes, drops a one-off, and judges the last retro's actions. |

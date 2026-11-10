@@ -19,7 +19,9 @@ A retrospective that changes nothing did not happen. This skill looks back at fi
 
 ## Steps
 
-Open a todo list with one entry per step.
+**Writing up one lesson only.** When the task is to write up a single incident or failure as a lesson, not to run a retrospective, do step 2 (gather the facts) and step 4 (find the cause), then write the lesson with [references/lesson-writeup.md](references/lesson-writeup.md) and hand back as [Hand back](#hand-back) says for one lesson. Skip the routing, approval, and record steps unless the owner also asks for changes. **Why**: the full eight steps end in a retro file and proposed changes, which is not what the reader of a lesson needs.
+
+Otherwise, open a todo list with one entry per step.
 
 ### 1. Scope
 
@@ -92,10 +94,15 @@ Present the facts, the causes, and the proposed changes. Apply only what the own
 
 Write the retrospective with [references/retro-template.md](references/retro-template.md), and add a dated summary line to the repo's retrospective log. When the input was a lesson log, end each entry you covered with its outcome, `Next action: <where> / <change> / <status>`, so the next retrospective sees which lessons are still open. If the work kept no decision log, start one for the next round, so the next retrospective has facts to read.
 
-When a lesson is written up to teach, such as an incident write-up, a postmortem, or a lesson for the team, follow [references/lesson-writeup.md](references/lesson-writeup.md): the mechanism, how it works normally, why the root cause happened, the fix, the result with numbers, and the takeaway, in that order. **Why**: a lesson that starts at the symptom loses every reader who does not already know how the system works; once the mechanism is explained, the error and the fix make sense. When the task is only to write up one lesson, that file is the task: gather the facts and find the cause as in steps 2 and 4, and skip the routing and approval steps unless the owner asks for changes too.
+When a lesson is written up to teach, such as an incident write-up, a postmortem, or a lesson for the team, follow [references/lesson-writeup.md](references/lesson-writeup.md): the mechanism, how it works normally, why the root cause happened, the fix, the result with numbers, and the takeaway, in that order. **Why**: a lesson that starts at the symptom loses every reader who does not already know how the system works; once the mechanism is explained, the error and the fix make sense.
 
 ## Hand back
 
 1. Five lines for the owner: what the work set out to do, what shipped, what hurt most, what you propose to change, and what needs the owner's decision.
 2. The retrospective file.
 3. The proposed changes, one per lesson, each with its file, its reason, and the failure it prevents.
+
+For one lesson only, hand back instead:
+
+1. The lesson file.
+2. One line naming any fact you could not verify, or any part the notes did not give (such as a measured result), so the owner fills it in rather than finds it invented.
