@@ -1,8 +1,8 @@
 ---
 name: retrospective
-description: Look back at finished work (a session, a pull request, a round of fixes, an incident, a migration, or a design decision that has been running for a while) and turn what it teaches into changes in files. Gathers facts from git history, reviews, decision logs, a lesson log kept during the work (such as `retros.md`), incidents, and evals, finds the reversals, the rework, and the defects caught late, checks each design decision's prediction against what happened, asks why until it reaches a cause in the process, and routes each lesson to the one place that owns it (a test or lint first, then a contract, a decision record, a skill, AGENTS.md, or memory), keeping generic skills free of one project's facts, and turns a lesson that came back after a text-only fix into a script or check, with the owner's approval. Use it after shipping, after an incident, at the end of a round of work, when lessons pile up in a lesson log, when a decision's revisit condition fires, or when someone says "retro", "what did we learn", "look back on this", or "why do we keep hitting this".
+description: Look back at finished work (a session, a pull request, a round of fixes, an incident, a migration, or a long-running design decision) and turn what it teaches into changes in files. Gathers facts from git history, reviews, decision logs, a lesson log (such as `retros.md`), incidents, and evals, finds reversals, rework, and late defects, checks each decision's prediction against what happened, asks why until it reaches a cause in the process, and routes each lesson to the one place that owns it (a test or lint first, then a contract, a decision record, a skill, AGENTS.md, or memory), keeping generic skills free of project facts and turning a lesson that returned after a text-only fix into a script or check, with the owner's approval. Use it after shipping or an incident, at the end of a round of work, when a lesson log piles up, when a revisit condition fires, to write up a lesson or explain an incident, or when someone says "retro", "what did we learn", "look back on this", or "why do we keep hitting this".
 metadata:
-  version: "0.2"
+  version: "0.3"
 ---
 
 # Retrospective
@@ -91,6 +91,8 @@ Present the facts, the causes, and the proposed changes. Apply only what the own
 ### 8. Record it
 
 Write the retrospective with [references/retro-template.md](references/retro-template.md), and add a dated summary line to the repo's retrospective log. When the input was a lesson log, end each entry you covered with its outcome, `Next action: <where> / <change> / <status>`, so the next retrospective sees which lessons are still open. If the work kept no decision log, start one for the next round, so the next retrospective has facts to read.
+
+When a lesson is written up to teach, such as an incident write-up, a postmortem, or a lesson for the team, follow [references/lesson-writeup.md](references/lesson-writeup.md): the mechanism, how it works normally, why the root cause happened, the fix, the result with numbers, and the takeaway, in that order. **Why**: a lesson that starts at the symptom loses every reader who does not already know how the system works; once the mechanism is explained, the error and the fix make sense. When the task is only to write up one lesson, that file is the task: gather the facts and find the cause as in steps 2 and 4, and skip the routing and approval steps unless the owner asks for changes too.
 
 ## Hand back
 
