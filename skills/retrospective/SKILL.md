@@ -1,8 +1,8 @@
 ---
 name: retrospective
-description: Look back at finished work (a session, a pull request, a round of fixes, an incident, a migration, or a design decision that has been running for a while) and turn what it teaches into changes in files. Gathers facts from git history, reviews, decision logs, a lesson log kept during the work (such as `retros.md`), incidents, and evals, finds the reversals, the rework, and the defects caught late, checks each design decision's prediction against what happened, asks why until it reaches a cause in the process, and routes each lesson to the one place that owns it (a test or lint first, then a contract, a decision record, a skill, AGENTS.md, or memory), keeping generic skills free of one project's facts, and turns a lesson that came back after a text-only fix into a script or check, with the owner's approval. Use it after shipping, after an incident, at the end of a round of work, when lessons pile up in a lesson log, when a decision's revisit condition fires, or when someone says "retro", "what did we learn", "look back on this", or "why do we keep hitting this".
+description: Look back at finished work (a session, a pull request, a round of fixes, an incident, a migration, or a long-running design decision) and turn what it teaches into changes in files. Gathers facts from git history, reviews, decision logs, a lesson log (such as `retros.md`), incidents, and evals, finds reversals, rework, and late defects, checks each decision's prediction against what happened, asks why until it reaches a cause in the process, and routes each lesson to the one place that owns it (a test or lint first, then a contract, a decision record, a skill, AGENTS.md, or memory), keeping generic skills free of project facts and turning a lesson that returned after a text-only fix into a script or check, with the owner's approval. Use it after shipping or an incident, at the end of a round of work, when a lesson log piles up, when a revisit condition fires, to write up a lesson or explain an incident, or when someone says "retro", "what did we learn", "look back on this", or "why do we keep hitting this".
 metadata:
-  version: "0.2"
+  version: "0.3"
 ---
 
 # Retrospective
@@ -19,7 +19,9 @@ A retrospective that changes nothing did not happen. This skill looks back at fi
 
 ## Steps
 
-Open a todo list with one entry per step.
+**Writing up one lesson only.** When the task is to write up a single incident or failure as a lesson, not to run a retrospective, do step 2 (gather the facts) and step 4 (find the cause), then write the lesson with [references/lesson-writeup.md](references/lesson-writeup.md) and hand back as [Hand back](#hand-back) says for one lesson. Skip the routing, approval, and record steps unless the owner also asks for changes. **Why**: the full eight steps end in a retro file and proposed changes, which is not what the reader of a lesson needs.
+
+Otherwise, open a todo list with one entry per step.
 
 ### 1. Scope
 
@@ -92,8 +94,15 @@ Present the facts, the causes, and the proposed changes. Apply only what the own
 
 Write the retrospective with [references/retro-template.md](references/retro-template.md), and add a dated summary line to the repo's retrospective log. When the input was a lesson log, end each entry you covered with its outcome, `Next action: <where> / <change> / <status>`, so the next retrospective sees which lessons are still open. If the work kept no decision log, start one for the next round, so the next retrospective has facts to read.
 
+When a lesson is written up to teach, such as an incident write-up, a postmortem, or a lesson for the team, follow [references/lesson-writeup.md](references/lesson-writeup.md): the mechanism, how it works normally, why the root cause happened, the fix, the result with numbers, and the takeaway, in that order. **Why**: a lesson that starts at the symptom loses every reader who does not already know how the system works; once the mechanism is explained, the error and the fix make sense.
+
 ## Hand back
 
 1. Five lines for the owner: what the work set out to do, what shipped, what hurt most, what you propose to change, and what needs the owner's decision.
 2. The retrospective file.
 3. The proposed changes, one per lesson, each with its file, its reason, and the failure it prevents.
+
+For one lesson only, hand back instead:
+
+1. The lesson file.
+2. One line naming any fact you could not verify, or any part the notes did not give (such as a measured result), so the owner fills it in rather than finds it invented.
