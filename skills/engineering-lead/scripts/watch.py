@@ -34,9 +34,10 @@ Watch the PR (preferred):
               closed: write its log line, then watch again
 
   --log makes logging part of the loop. The events that close a stage (reviewed, written,
-  stalled) record the log's size in a stamp beside it, one per watched PR command or result
-  file (<log>.<id>.watched); the next watcher of that target refuses to start until the log's
-  size has changed.
+  stalled) record the log's size for that watched PR command or result file in one stamp
+  file beside the log (<log dir>/.watch-stamps.json, keyed "<log name>:<id>"); the next
+  watcher of that target refuses to start until the log's size has changed. An old
+  per-target stamp (<log>.<id>.watched) is moved into that file and deleted.
 
 Watch the session (fallback, when the PR tool cannot list reviews):
   watch.py file --path <result file> [--worker <herdr name>]... [--log <lesson log>]
@@ -50,8 +51,8 @@ The script never reads a credential; the PR command does its own authentication.
 """
 
 import argparse
-import json
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -109,7 +110,11 @@ def is_approval(review):
     for key in ("state", "verdict"):
         if str(review.get(key) or "").lower() in ("approved", "approve"):
             return True
-    return bool(re.search(r"verdict:\s*approved?\b", str(review.get("body") or ""), re.I))
+    return bool(
+        re.search(
+            r"verdict:\s*approved?\b", str(review.get("body") or ""), re.IGNORECASE
+        )
+    )
 
 
 STAMPED_EVENTS = ("reviewed", "written", "stalled")
@@ -120,22 +125,51 @@ def log_size(log):
 
 
 class LogGate:
-    """One stamp per watched target, holding the log's size when its last stage closed."""
+    """The log's size when each watched target's last stage closed, in one stamp file beside the log."""
 
     def __init__(self, log, target):
         self.log = log
         digest = hashlib.sha1(target.encode("utf-8")).hexdigest()[:10]
-        self.stamp = f"{log}.{digest}.watched"
+        self.stamps = os.path.join(
+            os.path.dirname(os.path.abspath(log)), ".watch-stamps.json"
+        )
+        self.key = f"{os.path.basename(log)}:{digest}"
+        self.legacy = f"{log}.{digest}.watched"
+
+    def read(self):
+        try:
+            with open(self.stamps, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def write(self, data):
+        tmp = f"{self.stamps}.{os.getpid()}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=1, sort_keys=True)
+        os.replace(tmp, self.stamps)
+
+    def migrate(self):
+        """Move an old per-target stamp file into the shared one, once."""
+        if not os.path.exists(self.legacy):
+            return
+        with open(self.legacy, encoding="utf-8") as f:
+            size = int(f.read().strip() or -1)
+        data = self.read()
+        data.setdefault(self.key, size)
+        self.write(data)
+        os.remove(self.legacy)
 
     def logged(self):
-        if not os.path.exists(self.stamp):
-            return True
-        with open(self.stamp, encoding="utf-8") as f:
-            return log_size(self.log) != int(f.read().strip() or -1)
+        self.migrate()
+        stamp = self.read().get(self.key)
+        return stamp is None or log_size(self.log) != stamp
 
     def close_stage(self):
-        with open(self.stamp, "w", encoding="utf-8") as f:
-            f.write(f"{log_size(self.log)}\n")
+        data = self.read()
+        data[self.key] = log_size(self.log)
+        self.write(data)
 
 
 def finish(event, detail, code, gate=None):
@@ -197,7 +231,12 @@ def main():
                     and head != args.acked
                     and is_approval(newest)
                 ):
-                    finish("reviewed", {"head": head, "review": newest, "already": True}, 0, log)
+                    finish(
+                        "reviewed",
+                        {"head": head, "review": newest, "already": True},
+                        0,
+                        log,
+                    )
                 first_read = False
             if head != args.head:
                 finish("pushed", {"head": head, "reviews": len(reviews)}, 0, log)

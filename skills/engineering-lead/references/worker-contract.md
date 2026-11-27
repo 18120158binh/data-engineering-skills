@@ -53,6 +53,7 @@ A worker does not see the main session's conversation. Each assignment carries:
 - before each hand-off to review: merge the base's current tip into the task branch, rerun the checks, push, and hand off right after the push, without waiting for CI. **Why**: an approval given to a head that is behind the base is spent on the next base merge, and a reviewer waiting on CI sits idle for the whole run;
 - the boundary: commit on the task branch, push it, and open the PR (or update it on a rework round) with the repository's PR tool; no merge, approval, or deploy (unless the user has let the pair merge, [below](#in-herdr-the-pair-may-merge-when-the-user-says-so)); never credentials. If the push or PR fails for missing access, stop and report it, without workarounds. If the repository has no remote or PR process, commit locally and report the commit;
 - when to stop and report instead of guessing: an unresolved design decision, a silent contract, a missing dependency, a permission boundary, anything out of scope;
+- never write a decision record (a decision file, an ADR, a "decided by" line): report each choice in the result instead. The main session records only the user's or the team's decisions. **Why**: a coder added a scope rule nobody asked for and recorded it as the lead's decision, and removing it took a review round;
 - how to return the result: as its final message for a native subagent, or written to `.pm/<task-id>/coder-<round>.md` for a Herdr worker ([runtime-adapters.md](runtime-adapters.md#result-files)), with the contents listed below;
 - to keep every file it creates (notes, scratch checkouts, logs) inside the task's workspace; a separate checkout, if it needs one, goes under `.pm/<task-id>/`, never in `/tmp`;
 - its inputs inside its own workspace: copy every file the worker needs (the plan, earlier reviews, logs) into its worktree, such as `.pm/inputs/`, and point the brief there, never at a path outside its working directory. **Why**: a worker that reads outside its folder stops on a permission prompt, and answering a worker's permission prompt is the user's call, never the main session's.
@@ -93,7 +94,7 @@ The reviewer gets the material to judge for itself, not the coder's summary:
 
 - the original issue and its acceptance criteria;
 - the repository rules and conventions that apply;
-- the PR to review (number or URL) and its head commit SHA; without a PR process, the local commit and its base;
+- the PR to review (number or URL) and its head commit SHA; without a PR process, the local commit and its base. Review only a head that has an open PR; where the repository has a PR process and there is none, reply `blocked: no PR`. **Why**: a review that ran before its PR existed was posted late, and nobody saw it in time;
 - the coder's verification evidence, as a claim to check;
 - for work the user will see, the approved visual draft, which the reviewer checks the result against;
 - when to post: as soon as the review is done, without waiting for CI. CI is a merge gate, not a review gate: a merge needs the approval and green CI on the same head;
@@ -113,6 +114,8 @@ The reviewer gets the material to judge for itself, not the coder's summary:
 The reviewer checks correctness, the acceptance criteria, regression risk, the repository's conventions, test coverage and evidence, and security or operational concerns where they apply. It checks that each fixture standing in for an external response is real or documented, not copied from the code's assumption.
 
 ## The review loop
+
+A PR exists before the review starts. When the coder cannot open it (missing access), the main session opens it before the first hand-off, if its own identity may; otherwise the task is blocked on that access.
 
 With native subagents, the main session relays each round:
 
@@ -156,7 +159,7 @@ The main session declares a task merge-ready only when all of these hold, with e
 - the checks the change needs pass on that commit, run by the main session or confirmed from CI for that SHA; evidence from an earlier commit does not count;
 - the required CI checks pass;
 - the checks pass on the head merged with the base's current tip: the provider's merge ref when it runs checks there, otherwise a trial merge the main session or the reviewer runs with the full suite. After another PR merges into the base, check again before merging this one. Several PRs delivered together get one trial merge of all their heads. **Why**: two PRs that each pass alone can break the base together, and a repository without "require up-to-date branches" will not stop it;
-- with several PRs approved or in review at once, merge them in the order they were approved; before merging one, trial-merge each other open PR onto the result, and hold the merge when it would push another into conflict, unless the other can rebase cheaply. **Why**: a merge order chosen by attention pushed an approved PR into conflict twice, each time costing a merge round and a fresh review;
+- with several PRs approved or in review at once, merge them in the order they were approved; before merging one, trial-merge each other open PR onto the result, and hold the merge when it would push another into conflict, unless the other can rebase cheaply. **Why**: a merge order chosen by attention pushed an approved PR into conflict twice, each time costing a merge round and a fresh review. A PR stacked on another rebases after its base is squash-merged; plan that round. When the rebased tree equals the approved one (an identical `git range-diff`), the reviewer confirms that on the new head with the range-diff as evidence: a short round, not a full review;
 - the reviewer approved exactly that commit;
 - the repository's own required approvals are present (a code owner, a lead, or whatever the repository defines);
 - no blocker or open question remains.
