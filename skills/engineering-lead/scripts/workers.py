@@ -20,6 +20,15 @@ Every call to herdr passes its arguments as a list, so no shell rewrites a path
       Prints {"event": "working" | "blocked" | "not_started" | "failed", ...}; "failed"
       means herdr gave no state counter, so the script did not send.
 
+  workers.py handoff --repo <main checkout> --name <lead name> [--resume .pm/state.md]
+                     [--previous <old lead name>] [--settle 20]
+      Hands the run to a fresh main session. Refuses a path that is the home folder, not a
+      Git repository, or a linked worktree (the run belongs to the main checkout). Starts
+      Claude there in a new Herdr workspace, sends "/engineering-lead resume <state>"
+      (with "--previous <old lead name>", so the new session can close the old pane) as
+      send --slash does, and prints {"event": "started" | "blocked" | "not_started" | "failed", ...}.
+      Stop the old session only after "started".
+
   workers.py list [--task <task-id>] [--max <n>]
       Lists live agents named <task-id> or <task-id>-<role> (all named agents without it),
       with status and folder, and the live count against <max>. Run it after a merge:
@@ -78,7 +87,9 @@ def find_key(data, key):
 def live_agents():
     agents = parse(herdr("agent", "list")).get("agents")
     if not isinstance(agents, list):
-        finish("failed", 1, step="agent list", reason="herdr did not return an agent list")
+        finish(
+            "failed", 1, step="agent list", reason="herdr did not return an agent list"
+        )
     return agents
 
 
@@ -113,7 +124,9 @@ def wait_started(name, before_seq, seconds):
     end = time.time() + seconds
     while True:
         current, seq = state(name)
-        if current in ("working", "blocked") or (current == "done" and seq != before_seq):
+        if current in ("working", "blocked") or (
+            current == "done" and seq != before_seq
+        ):
             return current, True
         if time.time() >= end:
             return current, False
@@ -129,12 +142,24 @@ def finish(event, code, **detail):
     sys.exit(code)
 
 
-def repo_path(raw):
+def repo_path(raw, main_only=False):
     path = pathlib.Path(raw).expanduser().resolve()
     if path == pathlib.Path.home().resolve():
-        finish("refused", 2, reason="the repository path is the home folder", path=path.as_posix())
+        finish(
+            "refused",
+            2,
+            reason="the repository path is the home folder",
+            path=path.as_posix(),
+        )
     if not (path / ".git").exists():
         finish("refused", 2, reason="not a Git repository", path=path.as_posix())
+    if main_only and not (path / ".git").is_dir():
+        finish(
+            "refused",
+            2,
+            reason="a linked worktree, not the main checkout",
+            path=path.as_posix(),
+        )
     return path.as_posix()
 
 
@@ -154,20 +179,64 @@ def spawn(args):
         finish("over_cap", 1, live=live, max=args.max)
     created = parse(
         herdr(
-            "worktree", "create", "--cwd", repo, "--branch", args.branch,
-            "--base", args.base, "--label", args.label, "--no-focus",
+            "worktree",
+            "create",
+            "--cwd",
+            repo,
+            "--branch",
+            args.branch,
+            "--base",
+            args.base,
+            "--label",
+            args.label,
+            "--no-focus",
         )
     )
     pane = find_key(created, "pane_id")
+    start_claude(args.name, pane, "worktree create", created)
+    finish("started", 0, name=args.name, pane_id=pane, status="idle")
+
+
+def start_claude(name, pane, step, reply):
+    """Start Claude named <name> in <pane> and wait until it is idle; finish on anything else."""
     if not pane:
-        finish("failed", 1, step="worktree create", reply=created)
-    herdr("agent", "start", args.name, "--kind", "claude", "--pane", pane)
-    current = wait_for(args.name, ("idle", "blocked"), 60)
+        finish("failed", 1, step=step, reply=reply)
+    herdr("agent", "start", name, "--kind", "claude", "--pane", pane)
+    current = wait_for(name, ("idle", "blocked"), 60)
     if current == "blocked":
-        finish("blocked", 1, name=args.name, pane_id=pane, screen=screen(args.name))
+        finish("blocked", 1, name=name, pane_id=pane, screen=screen(name))
     if current != "idle":
-        finish("failed", 1, step="agent start", name=args.name, pane_id=pane, status=current, screen=screen(args.name))
-    finish("started", 0, name=args.name, pane_id=pane, status=current)
+        finish(
+            "failed",
+            1,
+            step="agent start",
+            name=name,
+            pane_id=pane,
+            status=current,
+            screen=screen(name),
+        )
+
+
+def deliver(worker, text, first_line, slash, settle):
+    """Send text, confirm the worker started on it, and return (current status, took)."""
+    before_seq = state(worker)[1]
+    if before_seq is None:
+        before_seq = state(worker)[1]
+    if before_seq is None:
+        finish(
+            "failed",
+            1,
+            step="agent get",
+            reason="herdr gave no state_change_seq, so a new turn cannot be told from the last one",
+        )
+    herdr("agent", "prompt", worker, text, timeout=120)
+    if slash:
+        herdr("agent", "send-keys", worker, "Enter")
+    current, took = wait_started(worker, before_seq, settle)
+    if not took and unsubmitted(worker, first_line):
+        herdr("agent", "send-keys", worker, "Enter")
+        current, took = wait_started(worker, before_seq, settle)
+    return current, took
 
 
 def send(args):
@@ -175,38 +244,74 @@ def send(args):
     if not brief:
         finish("refused", 2, reason="the brief file is empty", path=args.brief_file)
     text = f"/{args.slash} {brief}" if args.slash else brief
-    before_seq = state(args.worker)[1]
-    if before_seq is None:
-        before_seq = state(args.worker)[1]
-    if before_seq is None:
-        finish("failed", 1, step="agent get", reason="herdr gave no state_change_seq, so a new turn cannot be told from the last one")
-    herdr("agent", "prompt", args.worker, text, timeout=120)
-    if args.slash:
-        herdr("agent", "send-keys", args.worker, "Enter")
-    current, took = wait_started(args.worker, before_seq, args.settle)
-    if not took and unsubmitted(args.worker, brief):
-        herdr("agent", "send-keys", args.worker, "Enter")
-        current, took = wait_started(args.worker, before_seq, args.settle)
+    current, took = deliver(args.worker, text, brief, args.slash, args.settle)
     if took and current in ("working", "done"):
         finish("working", 0, worker=args.worker, status=current)
     if took and current == "blocked":
         finish("blocked", 1, worker=args.worker, screen=screen(args.worker))
-    finish("not_started", 1, worker=args.worker, status=current, screen=screen(args.worker))
+    finish(
+        "not_started", 1, worker=args.worker, status=current, screen=screen(args.worker)
+    )
+
+
+def handoff(args):
+    repo = repo_path(args.repo, main_only=True)
+    created = parse(
+        herdr("workspace", "create", "--cwd", repo, "--label", args.name, "--no-focus")
+    )
+    pane = find_key(created, "pane_id")
+    start_claude(args.name, pane, "workspace create", created)
+    prompt = f"resume {args.resume}" + (
+        f" --previous {args.previous}" if args.previous else ""
+    )
+    current, took = deliver(
+        args.name, f"/engineering-lead {prompt}", prompt, True, args.settle
+    )
+    if took and current in ("working", "done"):
+        finish("started", 0, name=args.name, pane_id=pane, status=current)
+    if took and current == "blocked":
+        finish("blocked", 1, name=args.name, pane_id=pane, screen=screen(args.name))
+    finish(
+        "not_started",
+        1,
+        name=args.name,
+        pane_id=pane,
+        status=current,
+        screen=screen(args.name),
+    )
 
 
 def list_workers(args):
     agents = live_agents()
     owned = [
-        {"name": a["name"], "status": a.get("agent_status"), "cwd": a.get("cwd"), "pane_id": a.get("pane_id")}
+        {
+            "name": a["name"],
+            "status": a.get("agent_status"),
+            "cwd": a.get("cwd"),
+            "pane_id": a.get("pane_id"),
+        }
         for a in agents
-        if a.get("name") and (not args.task or a["name"] == args.task or a["name"].startswith(args.task + "-"))
+        if a.get("name")
+        and (
+            not args.task
+            or a["name"] == args.task
+            or a["name"].startswith(args.task + "-")
+        )
     ]
-    print(json.dumps({"live": len(agents), "max": args.max, "workers": owned}, indent=2, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"live": len(agents), "max": args.max, "workers": owned},
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
     sys.exit(1 if args.max is not None and len(agents) > args.max else 0)
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("spawn")
     for flag in ("--repo", "--branch", "--base", "--label", "--name"):
@@ -217,11 +322,19 @@ def main():
     m.add_argument("--brief-file", required=True)
     m.add_argument("--slash")
     m.add_argument("--settle", type=int, default=20)
+    h = sub.add_parser("handoff")
+    h.add_argument("--repo", required=True)
+    h.add_argument("--name", required=True)
+    h.add_argument("--resume", default=".pm/state.md")
+    h.add_argument("--previous")
+    h.add_argument("--settle", type=int, default=20)
     ls = sub.add_parser("list")
     ls.add_argument("--task")
     ls.add_argument("--max", type=int)
     args = p.parse_args()
-    {"spawn": spawn, "send": send, "list": list_workers}[args.cmd](args)
+    {"spawn": spawn, "send": send, "handoff": handoff, "list": list_workers}[args.cmd](
+        args
+    )
 
 
 if __name__ == "__main__":

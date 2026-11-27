@@ -10,6 +10,7 @@ Read this when a task needs state (anything beyond a small task), when the user 
 - [Who writes it](#who-writes-it)
 - [Decisions](#decisions)
 - [Answering a status question](#answering-a-status-question)
+- [Handing off](#handing-off)
 - [Resuming](#resuming)
 - [Final report](#final-report)
 - [Delivery states](#delivery-states)
@@ -86,15 +87,42 @@ When the user asks how the work is going:
 
 Do not restart, re-plan, or re-ask what is decided. If the state and reality disagree, say so, correct the state, and then answer. A long blocking wait must not stop this; see [runtime-adapters.md](runtime-adapters.md#waiting-without-going-deaf).
 
+## Handing off
+
+The main session does not live for the whole run; it hands the run to a fresh session through the state.
+
+**When**, whichever comes first:
+
+- a task closes (merged, parked, or cancelled) before the next one starts;
+- a long wait begins (the user's merge, hours of CI);
+- about 20 handled worker events, or about 3 hours. These are proxies, since the session cannot see its own token count; they are defaults the owner may change in memory or the repository's settings;
+- the user asks.
+
+Only at a stable point: no unhandled event, no brief half sent.
+
+**What it writes**: a run state at `.pm/state.md`, above the per-task states, under about 100 lines:
+
+- each lane and task, with its step, worker names, PR, and head; a finished task shrinks to one line pointing to its task state;
+- the decisions waiting on the user;
+- the next action;
+- the exact command that re-arms each watcher, with its current `--head`, `--seen`, and `--acked`.
+
+Round lines and lessons go to the lesson log with `scripts/lesson.py`. Then it stops its own watchers.
+
+**Who starts the next session**: in Herdr, `python3 <skill dir>/scripts/workers.py handoff --repo <main checkout> --name <new lead name> --previous <own name>` starts a fresh Claude in the main checkout with `/engineering-lead resume .pm/state.md` and confirms it started. Only after `started` does the old session stop. The new session, after checking the state, closes the old lead's pane only if that pane is idle and has the recorded previous lead's name. Outside Herdr, tell the user to run `/clear`, then `/engineering-lead resume .pm/state.md`.
+
+**Why**: a long session re-sends its whole context on every event and status question; in one run 88% of usage came from sessions past 150k tokens.
+
 ## Resuming
 
-A new session given a task id, or finding one open state for the work at hand:
+A new session given a task id, a run state, or finding one open state for the work at hand:
 
-1. Reads the state.
-2. Re-checks the repository context and Git state ([project-context-discovery.md](project-context-discovery.md#later-runs)).
-3. Checks each worker recorded as active: does it still exist, under the recorded name and pane, in the recorded directory? Workers it cannot confirm are not its to use; start new ones and record that.
-4. Checks result files that arrived since the last update.
-5. Continues from the recorded step and logs the resumption.
+1. Reads the run state (`.pm/state.md`) when there is one, and only the task states it acts on. It reads the lesson log only for a retrospective.
+2. Re-arms the watcher commands the run state records, first.
+3. Re-checks the repository context and Git state ([project-context-discovery.md](project-context-discovery.md#later-runs)).
+4. Checks each worker recorded as active: does it still exist, under the recorded name and pane, in the recorded directory? A worker recorded in the state under its name and folder and confirmed live with `workers.py list` passes to the new session as it is, and is never briefed again. Workers it cannot confirm are not its to use; start new ones and record that.
+5. Checks result files that arrived since the last update.
+6. Continues from the recorded step and logs the resumption.
 
 Trust the state only as far as these checks confirm it.
 
@@ -164,13 +192,16 @@ After meaningful work, a few lines in the state, and in the repository's retrosp
 - what verification or review missed;
 - what to change next time.
 
-When the repository keeps a lesson log, write each lesson there as it happens, not only at the end, and end it with one line:
+When the repository keeps a lesson log, write each lesson there as it happens, not only at the end, with `scripts/lesson.py`:
 
-```text
-Next action: <where> / <change> / <status>
+```bash
+python3 <skill dir>/scripts/lesson.py add --log <log> --task <task-id> --where <where> --change <change> --text "<lesson>" [--repeats <n>]
+python3 <skill dir>/scripts/lesson.py round --log <log> --task <task-id> --round <n> --verdict <verdict> --sha <sha>
+python3 <skill dir>/scripts/lesson.py done --log <log> --n <n> --ref <commit or PR>
+python3 <skill dir>/scripts/lesson.py open --log <log>
 ```
 
-`where` is the place that owns the fix, as in the routing table of the `retrospective` skill (a test or script, a contract, a decision record, a project or generic skill, `AGENTS.md`, memory), or `none` for a one-off. Number the lessons, so a repeat can name the one it repeats. `change` is the smallest edit, in one sentence. `status` is `done <commit or PR>` only when the change has landed, otherwise `open`. When a lesson repeats an earlier one, start with `Repeats lesson <n>.`: the earlier fix was text that did not hold, so the next action is a script or a check. **Why**: a lesson logged without a destination is read once and lost; in one two-day run, 36 of 57 logged lessons were still open at the end, and the one fixed only in text came back three times.
+It numbers each lesson and ends it with `Next action: <where> / <change> / open`; `done` turns `open` into `done <ref>` once the change has landed. `where` is the place that owns the fix, as in the routing table of the `retrospective` skill (a test or script, a contract, a decision record, a project or generic skill, `AGENTS.md`, memory), or `none` for a one-off; `change` is the smallest edit, in one sentence. When a lesson repeats an earlier one, pass `--repeats <n>`: the earlier fix was text that did not hold, so the next action is a script or a check. **Why**: a lesson logged without a destination is read once and lost; in one two-day run, 36 of 57 logged lessons were still open at the end, and the one fixed only in text came back three times.
 
 At the end of a delivery, or when several lessons are open, run the `retrospective` skill over the log (pstack `reflect` when it is not installed). It routes each open lesson to one change.
 
