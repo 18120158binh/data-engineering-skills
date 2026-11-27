@@ -310,6 +310,33 @@ class WatchTest(unittest.TestCase):
                 ),
             )
 
+    def test_a_newer_old_stamp_replaces_the_shared_one(self):
+        import watch
+
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("a\n", encoding="utf-8")
+            gate = watch.LogGate(log, "target")
+            gate.close_stage()
+            with open(log, "a", encoding="utf-8") as f:
+                f.write("b\n")
+            pathlib.Path(gate.legacy).write_text(
+                f"{os.path.getsize(log)}\n", encoding="utf-8"
+            )
+            self.assertFalse(gate.logged())
+            self.assertFalse(os.path.exists(gate.legacy))
+
+    def test_an_unreadable_old_stamp_is_dropped(self):
+        import watch
+
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "retros.md")
+            pathlib.Path(log).write_text("a\n", encoding="utf-8")
+            gate = watch.LogGate(log, "target")
+            pathlib.Path(gate.legacy).write_text("garbage\n", encoding="utf-8")
+            self.assertTrue(gate.logged())
+            self.assertFalse(os.path.exists(gate.legacy))
+
 
 class WorkersTest(unittest.TestCase):
     def args(self, **kw):

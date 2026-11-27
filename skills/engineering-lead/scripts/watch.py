@@ -155,10 +155,12 @@ class LogGate:
         if not os.path.exists(self.legacy):
             return
         with open(self.legacy, encoding="utf-8") as f:
-            size = int(f.read().strip() or -1)
+            raw = f.read().strip()
         data = self.read()
-        data.setdefault(self.key, size)
-        self.write(data)
+        if raw.lstrip("-").isdigit():
+            # The old file is the newer stamp: a watcher still on the old code wrote it.
+            data[self.key] = int(raw)
+            self.write(data)
         os.remove(self.legacy)
 
     def logged(self):
